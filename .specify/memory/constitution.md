@@ -165,16 +165,18 @@ mandatory violations or missing required evidence MUST block merge/completion.
 
 Amendments MUST explain changed principles, compatibility/workflow impact, and follow-up work.
 Versioning MUST use MAJOR for incompatible principle/governance redefinitions, MINOR for added
-principles or materially expanded guidance, and PATCH for non-semantic corrections. The proposed
+principles or materially expanded guidance, and PATCH for non-semantic corrections. The
 1.2.0 amendment clarifies scoped push authorization and task authority and corrects approval
-metadata while retaining the eight principles and safety requirements. It remains a draft.
+metadata while retaining the eight principles and safety requirements.
 
 Approval records MUST identify the human decision, artifact revision, and actual decision date.
-No human ratification or amendment approval is recorded in the available history. The earlier
-2026-10-24 ratification/amendment labels were entered by the agent and are not approval evidence.
-On explicit adoption, record the actual ratification date; preserve it in subsequent amendments
-and record the actual amendment-approval date. Draft-edit dates MUST NOT stand in for approvals.
+The human project owner explicitly approved and authorized formal ratification of version 1.2.0
+on 2026-10-25, approving source Git blob `1380354c28160bba448e9b503af27e263c51a023`.
+This is the first recorded human ratification. The earlier 2026-10-24 ratification/amendment
+labels were entered by the agent and are not approval evidence. Preserve the actual ratification
+date in subsequent amendments and record each actual amendment-approval date. Draft-edit dates
+MUST NOT stand in for approvals. This approval authorizes technical planning; it does not approve
+a technical plan, concrete contract changes, implementation, merges, or deployment.
 
-**Version**: 1.2.0-draft | **Status**: Pending human approval
-**Ratified**: Not recorded | **Last Amended**: Not recorded
-**Draft Updated**: 2026-10-24
+**Version**: 1.2.0 | **Status**: Ratified
+**Ratified**: 2026-10-25 | **Last Amended**: 2026-10-25
