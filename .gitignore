@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+.idea/
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+contracts/tsp-output/
+frontend/src/api/schema.d.ts
+.DS_Store
