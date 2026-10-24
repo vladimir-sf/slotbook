@@ -12,7 +12,10 @@ If they conflict, flag the mismatch and request a contract change. Do not silent
 4. Add tests for every behavioral change, including negative/error paths.
 5. Run relevant checks and report exact commands/results; never claim tests passed without running them.
 6. Never use real customer data or commit `.env`, tokens, or API keys.
-7. No destructive DB operations, remote deploys, or pushes without explicit approval.
+7. An explicitly approved task scope permits routine, non-force pushes of its changes to its
+   isolated feature branch unless the human restricts that authorization. Merges, deployments,
+   destructive operations, force pushes, and pushes to shared integration/default/protected
+   branches require separate human review and explicit approval.
 8. Treat agent-authored code as untrusted until reviewed; no unchecked automated merging.
 9. Time values: UTC over API; IANA timezone for display and availability rules.
 10. PostgreSQL must enforce non-overlapping confirmed bookings, including simultaneous requests.

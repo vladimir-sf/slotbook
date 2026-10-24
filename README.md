@@ -29,6 +29,37 @@ git add . && git commit -m 'Initialize GitHub Spec Kit for Codex'
 `specify init --here --force` acknowledges the existing non-empty directory. It may modify
 README/instructions; review the diff rather than assuming a non-destructive merge.
 
+### Sharing Spec Kit across agents and worktrees
+
+Commit the reviewed, shared Spec Kit baseline before creating implementation worktrees.
+Uncommitted `.agents/` and `.specify/` additions are not copied into new worktrees.
+The following is a selective commit recommendation, not authorization to commit or push:
+
+| Files | Recommendation |
+|---|---|
+| `.agents/skills/**` | Share the project-local skill instructions. |
+| `.specify/memory/constitution.md` | Share after review; retain accurate draft/approval status. |
+| `.specify/scripts/**`, `.specify/templates/**`, `.specify/.gitignore` | Share the scripts, template sources, and local-state exclusions. |
+| `.specify/init-options.json`, `.specify/integration.json` | Share reviewed project choices and integration/version settings. |
+| `.specify/workflows/speckit/workflow.yml` | Share the definition subject to the approval-gate limitation below. |
+| Future feature specifications, plans, tasks, and decision records | Share the reviewed artifacts with the applicable branch. |
+| `.specify/integrations/*.manifest.json` | Installation receipts with hashes and timestamps; recommend leaving local. |
+| `.specify/memory/.constitution-template.json`, `.specify/workflows/workflow-registry.json` | Template provenance cache and installed-workflow registry; recommend leaving local. |
+| `.specify/feature.json`, `.specify/extensions/*/local-config.yml`, `.specify/integrations/packages/`, `.specify/integrations/packages.json` | Per-checkout state, local overrides, and adapter packages; already ignored, keep local. |
+
+The documentation review found no secret-pattern matches or personal filesystem paths in the
+30 current `.agents/` and `.specify/` files. The manifests/registry contain installation
+timestamps, not human approval records. This inspection is not a guarantee about future files.
+The receipt/cache exclusions are included in `.specify/.gitignore`. Review staged paths
+explicitly instead of blindly adding both directories.
+
+The bundled workflow has gates after specification and planning, but goes directly from tasks
+to implementation. It does not encode the constitution's separate pre-implementation approval.
+Use the individual commands and stop for that approval; do not run the workflow unattended
+until a separate, reviewed workflow change supplies that gate. Each worktree must select its
+own feature directory using `SPECIFY_FEATURE_DIRECTORY` or local `.specify/feature.json`.
+Keep installation state local and use the same documented Spec Kit version (currently 1.2.3).
+
 ## 2. Start the foundation
 
 ```sh

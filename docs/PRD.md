@@ -51,3 +51,17 @@ and book a meeting without creating an account. The host can review/cancel appoi
 - Should guest cancellation be offered? Default: admin-only cancellation in MVP.
 - Booking horizon? Default: next 60 days.
 - Min notice? Default: 1 hour.
+- DST edge policy: define treatment of ambiguous and nonexistent local times before implementing
+  affected availability behavior; fixed UTC offsets must not substitute for IANA timezone rules.
+- Authentication detail: approve token lifetime and browser storage strategy. Preserve hashed
+  passwords, environment-provided secrets, and short-lived bearer authentication.
+- API validation: reconcile status codes and error bodies with TypeSpec before implementation;
+  invalid slot queries and invalid activity updates currently lack a declared bad-request branch.
+  Do not invent implementation-only error responses.
+- Local startup: approve migration execution and repeatable synthetic admin/activity seeding,
+  including credential configuration. Preserve documented one-command Compose startup.
+
+These remain clarification/planning questions, not approved choices. Future feature `spec.md`
+and design artifacts must carry these decisions and the existing acceptance criteria forward
+with traceable references. Booking concurrency and interval verification are detailed in
+`docs/ADR-0002-booking-concurrency.md`; authentication design remains in `docs/ARCHITECTURE.md`.
