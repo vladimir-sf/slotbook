@@ -1,10 +1,20 @@
+# Dependency input; install requirements.lock with --require-hashes.
+# Runtime and test tools remain together, as in the approved scaffold.
 fastapi>=0.115,<1
+# Starlette 1.10 warns on the declared HTTPX 0.x TestClient adapter.
+starlette>=0.46,<1
+# Keep Starlette's legacy anyio.abc.BlockingPortal import warning-free.
+anyio>=4,<4.12
 uvicorn[standard]>=0.30,<1
 sqlalchemy>=2.0,<3
 alembic>=1.13,<2
 psycopg[binary]>=3.2,<4
 pydantic[email]>=2.9,<3
+# Legacy declared dependency only; API v1 uses opaque sessions, never JWT auth.
 PyJWT>=2.9,<3
 pwdlib[argon2]>=0.2,<1
 pytest>=8,<10
 httpx>=0.27,<1
+tzdata>=2025.2,<2027
+ruff>=0.14,<1
+mypy>=1.18,<2

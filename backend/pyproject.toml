@@ -1,0 +1,19 @@
+# Python 3.12 is the supported runtime. Dependency input: requirements.txt.
+# Rebuild the lock from backend/ with uv 0.13.5:
+# uv pip compile requirements.txt --python-version 3.12 --universal --generate-hashes \
+#   --no-header --output-file requirements.lock
+# Install: uv pip install --python .venv/bin/python --require-hashes -r requirements.lock
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+show_error_codes = true
+pretty = false
