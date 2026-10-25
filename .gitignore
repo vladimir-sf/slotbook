@@ -12,6 +12,10 @@ dist/
 coverage/
 playwright-report/
 test-results/
-contracts/tsp-output/
-frontend/src/api/schema.d.ts
+contracts/tsp-output/*
+!contracts/tsp-output/@typespec/
+contracts/tsp-output/@typespec/*
+!contracts/tsp-output/@typespec/openapi3/
+contracts/tsp-output/@typespec/openapi3/*
+!contracts/tsp-output/@typespec/openapi3/openapi.yaml
 .DS_Store
