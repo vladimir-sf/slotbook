@@ -17,15 +17,33 @@ approved A-001/A-003 and clarified A-002 (2026-10-25), with 77 acceptance scenar
 feature plan and design artifacts were formally approved by the human project owner on
 2026-10-25 as the R-003 technical design baseline. T-01/T-04 are approved; T-02 remains
 provisional pending PostgreSQL concurrency/crash/timeout/idempotency verification; T-03 remains
-conditional on validated contact-free backup and hosting controls. No feature tasks.md exists.
-These decisions do not authorize implementation. PRD/ADR/TypeSpec reconciliation and separate
-contract freeze remain required before dependent work.
+conditional on validated contact-free backup and hosting controls.
 
-## Phase 0 (Lead agent + human) — sequential; contract freeze
-1. Review PRD and ADRs; run Spec Kit `constitution/specify/clarify/plan/tasks/analyze`.
-2. Approve TypeSpec endpoints/errors, API time conventions, auth and status transitions.
-3. Compile OpenAPI, commit all shared artifacts, tag `contract-v1` (optional).
-4. Only then create the three worktrees.
+The reconciled API v1 was frozen at `adc0b83a4408493ac44d3a7571dfd3d25a758679`.
+The 92-task plan and execution protocol were approved and committed at
+`04bb7ed4e7a83244cb8d84de2a6cd8901b8b2419`. On 2026-10-25 the human authorized **T001 only**:
+prepare the Lead baseline/interface/isolation handoff. The human subsequently authorized its
+finalization and local documentation commit. T002–T092, worktree creation, agent launch,
+push, merge, deployment and recovery remain unauthorized.
+
+Current handoff and verification status: [IMPLEMENTATION_BASELINE.md](IMPLEMENTATION_BASELINE.md).
+Execution details: [EXECUTION_PROTOCOL.md](EXECUTION_PROTOCOL.md). **T001 is complete:** its
+handoff was committed and verified before marking completion, then the completion metadata was
+finalized in the new local baseline. Preserve the unrelated local README edit. Component
+ownership below is unchanged. The legacy
+AGENT_PROMPTS.md must be corrected and reviewed before agents use it: JWT and Frontend API
+generation instructions conflict with the approved opaque-session and Lead-ownership rules.
+Its QA scope/full-feature directions must also match the actual authorized task handoff.
+
+## Phase 0 (Lead agent + human) — T001 handoff and release gates
+1. Use the approved specification/design and frozen API; do not rerun prior phases or change scope.
+2. Prepare and verify T001's source hashes, component/CLI interfaces and isolation/evidence handoff.
+3. Use the human's T001 finalization/commit authorization to publish the reviewed shared descendant;
+   verify its committed contents before completing T001 and report its full final revision.
+   Exclude the unrelated README change. No push or other task execution is authorized.
+4. T001 acceptance has passed; T002–T005 are dependency-ready but unstarted. Obtain separate
+   authorization for the selected next task batch and its isolated checkouts; this T001-only
+   turn creates none and launches no agent.
 
 ## Phase 1 (parallel)
 | Agent | Exclusive ownership | Deliverable | Checks |
@@ -47,11 +65,14 @@ operations, force pushes, and pushes to shared integration/default/protected bra
 separate human review and explicit approval. A feature-branch push is not merge approval.
 
 ## Phase 2 (integration)
-1. Merge backend, verify endpoints agree with OpenAPI.
-2. Merge frontend, run public/admin journeys.
-3. Merge QA/Platform (resolve root Compose changes with lead).
-4. Run E2E in Docker Compose and simultaneous booking stress test.
-5. Review security and deployment; no deployment until human approval.
+1. Owners hand off clean exact component commits, interface details and test evidence.
+2. QA builds their selected contexts/images and verifies the combined candidate with isolated
+   projects/databases/ports before branch merges, following EXECUTION_PROTOCOL.md.
+3. Lead reviews Backend, Frontend and QA changes and evidence. Human review and explicit approval
+   precede each merge; no unattended or unchecked merging.
+4. Rerun the required contract/acceptance regressions after authorized integration changes.
+5. Security/privacy/hosting review and separate deployment approval remain required. T-02 stays
+   provisional and T-03 conditional until their mandatory evidence is reviewed.
 
 ## Definition of Done
 - `docker compose up --build` starts all services.

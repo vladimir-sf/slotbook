@@ -1,13 +1,20 @@
 ---
-description: "Approved SlotBook MVP task baseline; execution authorization pending"
+description: "Approved SlotBook MVP tasks; T001 complete, all other tasks unstarted"
 ---
 
 # Tasks: SlotBook Appointment Scheduling MVP
 
-**Generated / refined**: 2026-10-25. **Status**: task scope and execution protocol approved for the documentation baseline commit; every task is unchecked.
-**Approval scope**: The human project owner approved the refined 92-task plan and protocol,
+**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001 complete after verified committed handoff; 91 tasks remain unchecked and unstarted.
+**Original baseline approval scope**: The human project owner approved the refined 92-task plan and protocol,
 subject to final file verification, and authorized only their baseline commit. This records task
 approval, not permission to start execution, create worktrees, launch agents, push, merge or deploy.
+**Current scoped authorization (2026-10-25)**: The human subsequently authorized T001 only.
+The human subsequently authorized T001 finalization and its local documentation commit.
+H0 is satisfied for that handoff scope, not any other task or agent/worktree setup.
+The [handoff record](../../docs/IMPLEMENTATION_BASELINE.md) records the reviewed source and
+publication checks. T001 was marked complete only after its handoff was committed and verified;
+completion metadata is finalized in the new local baseline. No T002–T092 execution, push,
+merge, deploy or recovery is authorized by this turn.
 **Frozen source baseline**: `adc0b83a4408493ac44d3a7571dfd3d25a758679` on actual branch
 `001-appointment-scheduling` (verified clean before generation; one local commit ahead of origin).
 **Inputs**: [constitution](../../.specify/memory/constitution.md), [spec.md](spec.md),
@@ -15,7 +22,7 @@ approval, not permission to start execution, create worktrees, launch agents, pu
 [data-model.md](data-model.md), [quickstart.md](quickstart.md),
 [shared ownership](../../docs/AGENT_TASKS.md), [canonical API v1](../../contracts/main.tsp),
 [frozen review](contracts/canonical-review.md), [retry protocol](contracts/retry-protocol.md),
-and [execution protocol](../../docs/EXECUTION_PROTOCOL.md) (approved coordination baseline; execution remains unauthorized).
+and [execution protocol](../../docs/EXECUTION_PROTOCOL.md) (approved coordination baseline; only T001 finalization/local commit is authorized).
 
 ## Authority, format and ownership
 
@@ -64,7 +71,11 @@ changing shared ownership; T001 records its reviewed revision before execution.
 
 **Independent verification / checkpoint**: Review task authorization/baseline, install locked dependencies, collect real tests and prove generation no-diff. QA can author CI/test harnesses while component owners prepare their own builds.
 
-- [ ] T001 Owner: Lead/Architect — Publish the approved task revision, component interfaces and isolated-worktree handoff; correct historical no-tasks/no-freeze status without changing ownership. Paths: `docs/IMPLEMENTATION_BASELINE.md`, `docs/AGENT_TASKS.md`, `docs/EXECUTION_PROTOCOL.md`. Depends: H0. Accept: All owners start from one reviewed committed descendant of adc0b83 containing approved tasks/protocol; record full baseline/component hashes and protocol revision, component image/CLI handoffs, isolated projects/ports and per-milestone evidence manifest. QA uses selected clean component contexts without branch merges; correct the shared guide status. No agent starts before H0; no credentials or machine-specific state enter committed records.
+- [X] T001 Owner: Lead/Architect — Publish the approved task revision, component interfaces and isolated-worktree handoff; correct historical no-tasks/no-freeze status without changing ownership. Paths: `docs/IMPLEMENTATION_BASELINE.md`, `docs/AGENT_TASKS.md`, `docs/EXECUTION_PROTOCOL.md`. Depends: H0. Accept: All owners start from one reviewed committed descendant of adc0b83 containing approved tasks/protocol; record full baseline/component hashes and protocol revision, component image/CLI handoffs, isolated projects/ports and per-milestone evidence manifest. QA uses selected clean component contexts without branch merges; correct the shared guide status. No agent starts before H0; no credentials or machine-specific state enter committed records.
+  T001 completion (2026-10-25): documentation/interface/isolation handoff committed and verified
+  before this marker was set; verification is recorded in docs/IMPLEMENTATION_BASELINE.md.
+  Completion metadata is finalized in the new local baseline. T002–T005 are dependency-ready;
+  all downstream tasks remain unstarted and require separate authorization.
 
 - [ ] T002 [P] Owner: Backend — Lock the declared backend runtime/test dependencies and configure pytest markers, static checks and private test fixtures. Paths: `backend/requirements.txt`, `backend/requirements.lock`, `backend/pyproject.toml`, `backend/pytest.ini`, `backend/tests/__init__.py`, `backend/tests/conftest.py`, `backend/tests/support/__init__.py`, `backend/tests/support/clock.py`, `backend/tests/support/faults.py`. Depends: T001. Accept: Python 3.12 locked install includes pinned development Ruff/mypy and tzdata; from backend/, python -m ruff check app tests, python -m ruff format --check app tests and python -m mypy app execute, with no blanket suppressions. Pytest markers collect with importlib mode; private clock/fault interfaces and subprocess fixtures follow the execution protocol, never HTTP parameters/routes or production test switches. Record compatibility warnings.
 
@@ -334,7 +345,8 @@ This approved task baseline adds the nine dependency edges for I1/I2; defines QA
 Backend private hooks, isolated component-candidate execution and redacted evidence in the
 [execution protocol](../../docs/EXECUTION_PROTOCOL.md); adds review checkpoints within T055/T073;
 and makes image/tzdata pins and Ruff/mypy commands explicit. No task IDs or coverage rows are
-removed. All 92 tasks remain unchecked. Runtime verification and H0 remain outstanding.
+removed. All 92 tasks were unchecked at refinement. T001 is now complete; the other 91 tasks
+remain unstarted, with their execution authorization and runtime verification outstanding.
 
 ## Dependencies and execution order
 
@@ -719,19 +731,21 @@ not a redefinition of MVP scope: all US1–US5 and all 77 scenarios remain relea
 Proceed with US3/US4 prepared fixtures and parallel test authoring while respecting file/service
 edges, then complete US5 real timezone/mobile coverage and the final integration candidate.
 
-Task scope and protocol are approved for commitment; H0 permission to begin execution remains
-outstanding. Before agents start,
+Task scope/protocol are committed at the approved input revision. H0 now permits T001 handoff
+finalization/local commit only; its committed-handoff acceptance has passed. Before agents start,
 the Lead must provide the same reviewed committed task+contract baseline to separate worktrees
-and isolated test projects; this generation turn does not commit it or create them. T-02 runtime
+and isolated test projects; no worktree, database or agent is created by T001. T-02 runtime
 proof is unbuilt; T-03 local privacy/recovery proof and selected-host controls are unvalidated.
 Those are explicit evidence gates, not permission to weaken requirements or claim tested behavior.
 There is no unresolved product choice identified by decomposition. If implementation exposes a
 contract/precision/security contradiction, stop affected work and use the approved change process.
 
-The documentation baseline contains only tasks.md and docs/EXECUTION_PROTOCOL.md. It changes no
-feature code, frozen contract/specification/checklist, shared ownership file, application test or
-infrastructure. Its approval authorizes the baseline commit only; no task execution, agent launch,
-worktree creation, push, merge, restore or deployment is authorized. All checkboxes remain unchecked.
+The approved input commit contains tasks.md and docs/EXECUTION_PROTOCOL.md. T001 additionally
+prepares docs/IMPLEMENTATION_BASELINE.md and updates shared coordination status; it changes no
+feature code, frozen contract/specification/checklist, application test or infrastructure.
+Its scoped authorization permits the T001 documentation commit only, with no other task execution,
+agent launch, worktree creation, push, merge, restore or deployment. T001 is complete after
+committed-handoff verification; the other 91 tasks remain unchecked and unstarted.
 
 ## Task inventory
 

@@ -1,11 +1,17 @@
 # SlotBook implementation coordination protocol
 
-Prepared: 2026-10-25. Status: approved task-coordination baseline, subject to final file verification.
-The human project owner authorized commitment of this protocol and the refined task plan only;
-execution, worktree creation and agent launch remain unauthorized. This document resolves
-analysis findings I3/I4/I6 alongside the [92 feature tasks](../specs/001-appointment-scheduling/tasks.md).
-It defines future execution interfaces; no harness, worktree, application feature or recovery
-operation has been created or run by writing it. H0 permission to begin execution remains outstanding.
+Prepared: 2026-10-25. Status: approved task-coordination baseline at
+`04bb7ed4e7a83244cb8d84de2a6cd8901b8b2419`; T001 is complete after verified local publication.
+The human explicitly restricted this execution to T001: no other tasks, worktree creation,
+agent launch, push, merge, deploy or recovery. H0 is satisfied for that scope only;
+it does not authorize automatic progression to T002–T092 or the bundled full workflow.
+
+The [T001 handoff](IMPLEMENTATION_BASELINE.md) records input hashes, component interfaces,
+isolation/manifest definitions and publication status. The reviewed handoff was committed and
+verified before T001 was marked complete; its completion metadata is finalized in the new local
+baseline. T002–T005 are dependency-ready but not authorized to execute. No owner start, harness,
+image or runtime evidence is claimed.
+This protocol retains the approved I3/I4/I6 rules and all task/contract constraints below.
 
 The frozen API v1 source baseline is `adc0b83a4408493ac44d3a7571dfd3d25a758679`.
 The [constitution](../.specify/memory/constitution.md), approved specification/amendments,
@@ -28,6 +34,13 @@ Backend files. Backend requests Compose changes from QA. The Lead resolves coord
 contract mismatches before affected work continues. No public endpoint or request field is added.
 
 ## Common baseline and component candidates
+
+The steps below apply only to separately authorized work. T001-only preparation does not
+create component checkouts. The approved input commit remains fixed; the revised T001 output
+must be published as a reviewed descendant before any component owner starts. Use this handoff,
+not the stale legacy AGENT_PROMPTS.md instructions about JWTs or Frontend contract generation.
+That file requires correction and review before an implementation agent may use it; it is
+not automatically approved by publication of T001.
 
 1. After H0, the Lead publishes a reviewed, committed common baseline containing the task list
    and protocol, descended from the frozen commit. All implementation checkouts start from that
