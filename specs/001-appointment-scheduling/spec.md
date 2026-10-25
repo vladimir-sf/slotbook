@@ -4,13 +4,22 @@
 
 **Created**: 2026-10-24
 
-**Status**: Approved for technical planning — all fifteen clarification answers preserved;
-D-001–D-012 product choices resolved. Implementation is not authorized.
+**Status**: Approved specification and technical design baseline — all fifteen clarification
+answers preserved; D-001–D-012 product choices resolved. Technical-plan approval was formally
+recorded on 2026-10-25; T-02 remains provisional and T-03 conditional. Implementation is not authorized.
 
 **Approved**: 2026-10-25 by the human project owner.
 
 **Approved Source Revision**: Git blob `d180b9b83857cfd4ebf4ed118d2e74f3aa94512e`.
 Approval finalization changes only review/status records; source reconciliation remains planning work.
+
+**Current Specification Revision**: A-003, including approved A-001 and clarified A-002,
+explicitly approved by the human project owner on 2026-10-25. Original approval provenance
+above and the fifteen historical Q/A answers are preserved. Current receipt/recovery semantics
+are amended only as recorded in [A-002](amendments/A-002-durable-admission.md) and
+[A-003](amendments/A-003-disaster-recovery.md); A-001 clock/DST behavior remains unchanged.
+T-01/T-04 are approved, T-02 provisional pending runtime verification, T-03 conditional on
+backup/hosting restrictions. None authorizes tasks or implementation.
 
 **Input**: User request to specify public activity browsing, availability and guest booking,
 protected administration, responsive use, understandable failures, and consistent time display
@@ -102,6 +111,48 @@ separately approved this complete specification, its requirements checklist, and
 and checklist markers alone did not grant that approval. No technical plan, concrete contract
 amendment, implementation, or passing application tests are approved or evidenced by this record.
 
+## Approved Amendments
+
+### A-001 — Clock-aligned appointment starts (2026-10-25)
+
+The human project owner explicitly approved this amendment after planning identified P-01.
+Appointment starts MUST be on minutes 00, 15, 30, or 45, with zero seconds/fractional seconds,
+in the activity's IANA timezone. The grid is independent of working-window start and visitor
+display timezone. A 09:10 window first permits 09:15 only if the entire appointment fits one
+continuous valid portion of that window. Never round or shift a submitted off-grid instant.
+The previous fifteen clarification answers, including skipped/repeated-time behavior and
+distinct offsets for repeated local times, remain unchanged. P-01 is resolved.
+
+Affected requirements and verification: FR-004/005, SC-002, US1.7–8, US2.16 and US5.13.
+The [amendment record](amendments/A-001-clock-aligned-starts.md) documents rationale, compatibility,
+agent/test impact and source reconciliation. This product approval does not approve the technical
+plan, concrete contract changes, tasks or implementation. Stop for technical-plan review.
+
+### A-002 — Persisted database admission timestamp (approved with clarification, 2026-10-25)
+
+An attempt is valid only after admission commits durably. Its immutable database-generated
+receipt timestamp T is persisted with the original binding in that successful transaction;
+expiry is exactly E=T+24 elapsed hours. T is not PostgreSQL commit metadata or commit/HTTP
+acknowledgement time. A delayed commit consumes the fixed window and never resets it; a key
+committed at/after E is already expired and cannot execute or return pending. A known rollback
+admits nothing through that transaction. An uncertain COMMIT remains unverified until a fresh
+committed-state read resolves it. Only proven committed, matching, unexpired unfinished attempts
+may return ordinary pending. See the [approval/impact record](amendments/A-002-durable-admission.md).
+
+### A-003 — Qualified disaster-recovery invalidation (approved, 2026-10-25)
+
+A separately human-approved disaster restore unable to preserve retry state may invalidate old
+identifiers, including unexpired ones. Return 409 attempt_invalidated_by_restore with unknown-
+outcome/host-verification guidance, distinct from ordinary 410 attempt_expired. Never silently
+issue a new key, infer no booking exists, or restore guest contacts. Normal restart, routine
+maintenance and transient failure preserve the original valid identifiers/T/E/results and never
+invoke this exception. See the [approval/impact record](amendments/A-003-disaster-recovery.md).
+
+These amendments refine FR-008/012/022/024/029, D-009/011, SC-011/017 and affected acceptance
+cases. Twelve new cases supplement the A-001-stage 65, for 77 current scenarios. T-02 runtime
+verification, T-03 operational restrictions, future PRD/TypeSpec reconciliation and separate
+implementation authorization remain required; no runtime checks are claimed by product approval.
+
 ## User Scenarios & Testing *(mandatory)*
 
 Priorities express delivery order, not permission to omit a journey. All five stories are MVP
@@ -137,6 +188,13 @@ can browse, choose an activity, and navigate to a date's availability without ad
    and selects it, **Then** the catalog includes its description or a preview with access to
    full text, and the full description is available before booking. Markup-like content is
    ordinary visible text, never interpreted formatting or executable content.
+7. **Given** an otherwise available activity-local window 09:10–10:00 and a 30-minute activity,
+   **When** starts are offered, **Then** 09:15 and 09:30 are eligible, 09:10 and 09:25 are not
+   on the clock-aligned grid, and 09:45 is excluded because its end would exceed the window.
+   The window is not shifted, and 09:30 may end exactly at 10:00.
+8. **Given** an otherwise available activity-local window 09:10–09:40 and a 30-minute activity,
+   **When** availability is requested, **Then** there are no eligible starts: 09:10 is off-grid
+   and 09:15 would end outside the window. The system does not round or extend the window.
 
 ---
 
@@ -173,7 +231,8 @@ a separate competing submission can verify conflict handling without administrat
    does not automatically submit a second booking, and states that confirmation is unverified.
    The guest can explicitly retry the same attempt under the safe-retry policy in D-009.
 8. **Given** an attempt that already created a booking but whose response was lost, **When**
-   the guest retries that same attempt with matching details before its 24-hour expiry,
+   the guest retries that same attempt with matching details before its 24-hour expiry and
+   without a qualified A-003 recovery invalidation,
    **Then** the same booking identity and its current
    status are returned without creating another booking, even if availability rules changed
    after the original success. A canceled booking is not recreated or reconfirmed by retrying.
@@ -193,8 +252,8 @@ a separate competing submission can verify conflict handling without administrat
     checked, **When** the guest submits, **Then** the new booking is rejected with notice-period
     feedback. Earlier display grants no hold or grace period; existing confirmed bookings and
     safe retries returning an already completed attempt remain unaffected.
-13. **Given** a private attempt identifier first received at T, **When** matching details are
-    retried before T + 24 elapsed hours, **Then** retries share the original attempt and result
+13. **Given** a current-generation committed attempt with persisted database receipt timestamp T,
+    **When** matching details are retried before T + 24 elapsed hours, **Then** retries share the original attempt and result
     without extending expiry. At or after T + 24 hours, retries are rejected as expired without
     revealing guest contacts or silently creating a new attempt; an unknown result directs
     the guest to host verification rather than assuming no booking exists.
@@ -204,8 +263,47 @@ a separate competing submission can verify conflict handling without administrat
     corrected details require a new attempt, never an automatic replacement after uncertainty.
 15. **Given** simultaneous matching retries with one valid identifier, **When** processing
     completes, **Then** at most one booking exists and all completed retry results refer to
-    that identity/status without guest name/email. Unfinished processing may report pending;
-    a recorded definite rejection is not reinterpreted as a new booking on later retry.
+    that identity/status without guest name/email. Ordinary pending requires proven committed,
+    matching, unexpired unfinished admission, including after contention; unknown admission
+    cannot claim pending. A recorded definite rejection is not reinterpreted as a new booking.
+16. **Given** an otherwise eligible window and a request at activity-local 09:10, 09:25,
+    09:15:30, or 09:15:00.001, **When** a new booking is submitted directly, **Then** it is
+    rejected as off-grid without creating a booking or rounding to another instant. The same
+    aligned-start validation applies to offered slots and submission-time eligibility.
+17. **Given** an HTTP submission whose admission transaction is known to have rolled back,
+    **When** feedback is returned, **Then** that transaction establishes no valid attempt and
+    starts no booking execution. It claims neither committed pending admission nor confirmation;
+    the same key/details are retained for an explicit retry, with no assertion about parallel work.
+18. **Given** admission timestamp T stored by the database and commit C delayed after T,
+    **When** validity is evaluated, **Then** expiry stays E=T+24h and commit delay consumes
+    the window, rather than moving expiry to C+24h. At C>=E the key is already expired:
+    no booking/pending/result is returned, and the expired identifier is never treated as new.
+19. **Given** admission committed with T/E/binding but its acknowledgement was lost,
+    **When** the same key/details are explicitly retried, **Then** the original committed
+    timestamp, deadline and binding are used without a new admission or extended window.
+20. **Given** an earlier failed HTTP request for which no admission ever committed,
+    **When** a later explicit same-key request first commits admission, **Then** its persisted
+    database-generated timestamp establishes the only valid T/E, not the earlier HTTP arrival.
+21. **Given** a connection failure during COMMIT and an unavailable fresh committed-state read,
+    **When** the outcome cannot safely be resolved, **Then** it remains unverified rather than
+    claiming rollback, ordinary pending, definite rejection or a confirmed booking. No key is
+    replaced or timestamp reset automatically; later committed-state recovery decides the result.
+22. **Given** a committed, unexpired attempt and normal API/database/worker restart or transient
+    failure, **When** service resumes and the guest retries matching details, **Then** the same
+    binding/T/E/result is preserved without rotating generation or applying restore invalidation.
+23. **Given** a separately approved disaster restore that cannot recover retry state,
+    **When** a still-unexpired prior-generation identifier is retried, **Then** it receives
+    409 attempt_invalidated_by_restore, never ordinary chronological-expiry feedback or a new
+    booking. The client explains that the outcome is unknown and requires host verification.
+24. **Given** an old identifier absent from the restored snapshot, **When** its prior generation
+    is presented, **Then** it is rejected as restore-invalidated, not admitted as unseen/new.
+    No original outcome or admission is inferred merely from the supplied identifier.
+25. **Given** an expired current-generation identifier, **When** it is retried, **Then** it
+    receives 410 attempt_expired, distinct from restore invalidation; no ordinary pending,
+    new attempt, old result or contact details are returned.
+26. **Given** missing retry state or HMAC secret during routine startup without an approved
+    unrecoverable restore, **When** readiness is evaluated, **Then** it fails closed and does
+    not silently create a new generation, invalidate valid identifiers or replace stored T/E.
 
 ---
 
@@ -316,7 +414,7 @@ can inspect appointment details, cancel one booking, and verify the resulting av
    **Then** the guest's name and email are absent, the contact-removed state is understandable,
    and appointment identity, activity, time, and status can remain as history.
 8. **Given** contact details already removed under the retention policy, **When** an old
-   booking attempt is retried or recovered, **Then** it does not reveal or restore those
+   current-generation booking attempt is retried or recovered, **Then** it does not reveal or restore those
    details and does not create another booking. Its expired retry identifier is rejected;
    contact-free expiry tracking must not restore expired recovery access. Contract and storage
    safeguards still require the review recorded in G-006/G-007.
@@ -337,6 +435,14 @@ can inspect appointment details, cancel one booking, and verify the resulting av
     submission, or private retry credential is present. Restore preserves only the permitted
     history, cannot revive expired retry access, and cannot restore guest contacts even before
     their deadline. Missing contacts are clearly represented rather than fabricated.
+13. **Given** restored contact-free history and an unknown old booking outcome,
+    **When** retry state is unavailable after a qualified A-003 recovery, **Then** no contacts
+    or private retry credentials are restored, no booking failure is inferred, and the guest
+    is directed to host verification before deliberately starting another booking attempt.
+14. **Given** a current-generation key at its chronological expiry and a prior-generation key
+    invalidated by a separately approved restore, **When** recovery feedback is inspected,
+    **Then** 410 attempt_expired and 409 attempt_invalidated_by_restore remain distinct, both
+    avoid contact disclosure/new-key fallback, and neither revives expired access or a booking.
 
 ---
 
@@ -393,6 +499,12 @@ viewport widths and display one appointment in two named timezones, including DS
     **Then** the window yields zero slots rather than shifting into another period or changing
     the recurring weekly rule. An appointment ending exactly at a valid portion's right
     boundary may fit; starts at an excluded right boundary do not fit that portion.
+13. **Given** clock-aligned starts in the activity's IANA timezone and a different visitor
+    display timezone, **When** starts are displayed or the display timezone changes, **Then**
+    eligibility remains anchored to activity-local minutes 00, 15, 30, and 45; UTC instants
+    do not move. On repeated-time dates both otherwise eligible occurrences of an aligned
+    local start remain distinct choices with their respective UTC-offset labels. Nonexistent
+    starts remain omitted, and full-duration continuous-window fit still applies to both.
 
 ---
 
@@ -413,6 +525,9 @@ viewport widths and display one appointment in two named timezones, including DS
   bookings use the submission-time check, with no browsing grace period. Exact one-hour and
   1440-hour start boundaries are inclusive elapsed-time limits, independent of clock changes.
 - A duration fits exactly at a working-window end, or exceeds it by one increment.
+- A window begins off the clock-quarter-hour grid: start at the next activity-local minute
+  00/15/30/45 only if the complete elapsed interval fits. Do not align relative to the window,
+  shift its boundaries, admit a fractional-second start, or round an off-grid submission.
 - A date has no working window, has been blocked, or is outside the approved booking horizon.
 - Weekly windows overlap, duplicate, or cross midnight: reject the replacement schedule
   and retain the previous valid one. Touching windows are valid but are not merged, so a
@@ -468,10 +583,13 @@ viewport widths and display one appointment in two named timezones, including DS
   calendar date MUST mean the date of each offered start in the selected display timezone,
   even when this spans portions of multiple activity-local dates (D-006, resolved).
 - **FR-004**: Availability MUST follow weekly windows in the activity's IANA timezone, with
-  starts at 15-minute increments and the full activity duration fitting inside one individual
-  window and one continuous valid real portion under FR-030. Touching windows MUST NOT be
+  starts aligned to activity-local minutes 00, 15, 30, or 45 and zero seconds/fractional seconds,
+  independently of the window's start or visitor display timezone (A-001, approved). Off-grid
+  starts MUST NOT be offered, accepted, rounded, or shifted. The full activity duration MUST fit
+  inside one individual window
+  and one continuous valid real portion under FR-030. Touching windows MUST NOT be
   silently combined to admit a crossing appointment.
-- **FR-005**: Past, blocked, inactive-activity, already-occupied, and policy-ineligible slots
+- **FR-005**: Past, blocked, inactive-activity, already-occupied, off-grid (FR-004), and policy-ineligible slots
   MUST NOT be offered or accepted for new bookings. Later rule changes MUST NOT invalidate or
   cancel existing bookings (FR-023). A blocked date applies only to its activity and is
   interpreted in that activity's IANA timezone (D-001, resolved). Notice and horizon MUST
@@ -485,7 +603,8 @@ viewport widths and display one appointment in two named timezones, including DS
   earlier displayed availability or the visitor's clock. The same rules apply when offering
   slots, with no hold or notice grace period from browsing. A safe retry of an already
   completed attempt within its validity window returns its existing result under FR-024
-  instead of making a new booking; an expired identifier is rejected.
+  instead of making a new booking; expired identifiers reject and A-003-qualified recovery
+  invalidation is reported separately. No failed/unverified admission establishes a valid attempt.
 - **FR-009**: Confirmed bookings for the same activity MUST NOT overlap, including simultaneous
   requests with identical or different overlapping starts. Adjacent intervals MUST be allowed
   when otherwise eligible, following ADR-0002. Cross-activity exclusivity is not added here.
@@ -497,7 +616,10 @@ viewport widths and display one appointment in two named timezones, including DS
 - **FR-012**: Unverified submission outcomes MUST be distinguished from confirmed success and
   confirmed rejection. Guests MUST be able to explicitly retry the same attempt safely under
   FR-024, rather than starting a new submission. The interface MUST NOT blindly resubmit or
-  claim an outcome before it is known (D-009, recovery policy resolved).
+  claim an outcome before it is known (D-009, amended by A-002/A-003). Unverified admission/
+  execution and verified committed-but-unfinished processing MUST be distinguished; ordinary
+  pending requires committed matching unexpired admission. Restore-invalidated unknown outcomes
+  MUST direct host verification before another deliberate attempt, without automatic replacement.
 - **FR-013**: The single seeded administrator MUST authenticate before management access.
   Public administrator registration MUST NOT be offered. Each successful login MUST establish
   a fixed 60-minute session under FR-028 (D-007, resolved).
@@ -546,27 +668,40 @@ viewport widths and display one appointment in two named timezones, including DS
   display timezone MUST NOT move a selected/booked instant. Transition-window boundaries MUST
   follow FR-030 (D-005, resolved); initial display/date policy is resolved in D-006.
 - **FR-022**: Failed or unverified operations MUST NOT claim successful booking, cancellation,
-  or schedule changes. Availability-load failure MUST be distinguishable from an empty schedule.
+  or schedule changes. Uncertain COMMIT MUST remain unverified until committed-state evidence
+  resolves it, never be assumed to prove rollback. Availability-load failure MUST be
+  distinguishable from an empty schedule.
 - **FR-023**: Changes to activity details, duration, timezone, active status, working windows,
   or blocked dates MUST preserve existing bookings' agreed start/end instants and status.
   The administrator MUST be warned about existing appointments affected by proposed changes.
   Changed rules and duration MUST apply to new booking attempts; unchanged confirmed intervals
   continue excluding overlaps. Cancellation MUST remain an explicit administrator action,
   not a side effect of configuration edits (D-008, preservation policy resolved).
-- **FR-024**: Safe retry MUST recognize the guest's original booking attempt and return its
-  recorded result while its private identifier is valid, including the same booking identity
-  and current status when a booking exists. The identifier MUST be unpredictable, contain no
-  contact data, and be created before first submission; its validity MUST end exactly 24 elapsed
-  hours after first system receipt and MUST NOT extend on retry. Matching simultaneous retries
-  MUST converge on at most one booking/result; unfinished work may report processing. A recorded
-  definite rejection MUST remain that attempt's result. If no final outcome exists, it may
-  complete at most once while currently eligible or reject definitively. Changed activity,
-  start, name, or email with the same identifier MUST be rejected generically without disclosing
-  original details. Retry confirmations MUST omit guest name/email, and contact-based lookup is
-  prohibited. Expired identifiers MUST be rejected rather than reused as new; unknown outcomes
-  require host verification, and deliberate new attempts require new identifiers. No retry
-  may duplicate/revive a booking or restore removed contacts. Identifier transport, expiry
-  enforcement/storage, and privacy controls require approved contract/planning work (G-006).
+- **FR-024**: Safe retry MUST recognize the original booking attempt while valid and return its
+  recorded result, including the same booking identity/current status when one exists, subject
+  only to the explicit A-003 recovery exception below. The private unpredictable identifier MUST
+  be created before first submission and contain no contact data. Admission becomes valid only
+  after its original binding and database-generated receipt timestamp T/deadline E commit
+  successfully and durably in one transaction. E MUST equal T+24 elapsed hours and MUST NOT
+  extend on retries or delayed commit; T is not commit metadata, HTTP/ACK time or transaction-start
+  time. If commit occurs at/after E, the key is already expired and MUST NOT execute or return pending.
+  Known admission rollback creates no valid attempt through that transaction; uncertain COMMIT
+  MUST remain unverified until safely resolved. If no admission ever committed, a later explicit
+  request may create the first valid admission using its own persisted database timestamp.
+  Matching simultaneous retries MUST converge on at most one booking/result. Ordinary pending
+  MUST require proven committed matching unexpired unfinished admission; changed-details/expired
+  or unverified requests MUST NOT receive it. Recorded definite rejection remains final. Changed
+  activity/start/name/email MUST reject generically without original-detail/result disclosure.
+  Retry confirmations MUST omit guest name/email; contact-based lookup is prohibited. Current-
+  generation chronological expiry MUST reject with 410 attempt_expired, never admit the key anew.
+  Only a separately human-approved disaster recovery unable to preserve retry state MAY invalidate
+  prior-generation identifiers, including unexpired ones, with 409 attempt_invalidated_by_restore.
+  That outcome MUST NOT claim chronological expiry or booking failure; unknown outcomes require
+  host verification before another deliberate attempt, never automatic key replacement. Normal
+  restarts and transient failures MUST preserve valid keys/T/E/binding/results. No retry may
+  duplicate/revive a booking or restore removed contacts. Exact API shapes and runtime mechanisms
+  remain subject to contract review and provisional T-02 verification (G-006, A-002/A-003).
+
 - **FR-025**: Guest name and email MUST be automatically deleted at a deadline of 720 elapsed
   hours after the booking's recorded end for non-canceled bookings, or after its first successful
   cancellation for canceled bookings. Later activity edits, retries, and repeated cancellation
@@ -600,7 +735,11 @@ viewport widths and display one appointment in two named timezones, including DS
   retry access. Loss of live guest contacts is not recoverable from these copies, including
   before the normal deletion deadline, and restored views MUST accurately show contact removal.
   These rules constrain recovery and any future exports; they do not add an export feature.
-  Approved storage, purge, and restore design/verification remain required before public use.
+  Under approved A-003, separately human-approved disaster recovery unable to preserve retry
+  state MAY invalidate unexpired old identifiers with distinct restore-invalidation feedback;
+  it MUST NOT silently create new attempts or claim chronological expiry. Normal restarts and
+  transient failures MUST retain valid retry state. Approved storage, purge, hosting and restore
+  verification remain required before public use; T-03 approval is conditional on those controls.
 - **FR-030**: On a transition date, a configured weekly window MUST keep its activity-local
   date and clock limits. Its valid real portions consist of the instants whose activity-local
   date matches that window's date and whose local clock is at/after its start and before its
@@ -640,9 +779,11 @@ viewport widths and display one appointment in two named timezones, including DS
   time remain as history. Contact-free recovery can remove contacts earlier than the deadline.
 - **Booking attempt**: One guest's original submission and its outcome, associated with at
   most one booking. A private unpredictable identifier created before submission binds the
-  original details and expires 24 elapsed hours after first system receipt. Valid matching
+  original details and persisted database receipt timestamp T/deadline E, effective only upon
+  successful durable admission commit (A-002). E=T+24h even after commit delay. Valid matching
   retries share the attempt/result; changed details and expired identifiers are rejected,
-  and no guest account/contact lookup is introduced. Contract reconciliation remains G-006;
+  and no guest account/contact lookup is introduced. A-003 adds only qualified recovery
+  invalidation with distinct feedback; normal restarts preserve state. Contract reconciliation remains G-006;
   no concrete wire format, generator, or storage mechanism is chosen here.
 - **Administrator**: The single authorized operator managing offerings, availability, and
   bookings. Guests have no account entity; their contact details belong to their booking.
@@ -651,11 +792,11 @@ viewport widths and display one appointment in two named timezones, including DS
 
 | Journey | Dependencies | Requirements | Verification |
 | --- | --- | --- | --- |
-| US1: discover | Configured activities/windows; visitor-date grouping with activity-local eligibility; approved description contract addition | FR-001–005, FR-021, FR-031 | US1.1–6; SC-001–002, SC-014, SC-019 |
-| US2: reserve | US1 selection; current availability; duration and attendee validation; private 24-hour retry contract follow-up | FR-005–012, FR-024, FR-026; FR-009 also applies to admin/config changes | US2.1–15; SC-003–005, SC-011, SC-013 |
+| US1: discover | Configured activities/windows; activity-local clock-aligned starts; visitor-date grouping with activity-local eligibility; approved description contract addition | FR-001–005, FR-021, FR-031 | US1.1–8; SC-001–002, SC-014, SC-019 |
+| US2: reserve | US1 selection; current availability; clock alignment, duration and attendee validation; private 24-hour retry contract follow-up | FR-004–012, FR-024, FR-026; FR-009 also applies to admin/config changes | US2.1–26; SC-002–005, SC-011, SC-013, SC-017 |
 | US3: configure | Administrator provisioning and fixed-lifetime authentication; preserved bookings, same-day windows, per-activity blocks and validated descriptions | FR-004, FR-013–016, FR-023, FR-027–028, FR-031 | US3.1–16; SC-002, SC-006, SC-010, SC-015–016, SC-019 |
-| US4: review/cancel | Authentication and existing bookings, prepared or from US2; contact-removal contract follow-up | FR-014, FR-017–019, FR-025, FR-029 | US4.1–12; SC-006, SC-008, SC-012, SC-017 |
-| US5: responsive/time | Cross-cutting acceptance of US1–4; approved local-window and visitor-date policies | FR-003–004, FR-019–022, FR-030 | US5.1–12; SC-007–009, SC-014, SC-018 |
+| US4: review/cancel | Authentication and existing bookings, prepared or from US2; contact-removal contract follow-up | FR-014, FR-017–019, FR-025, FR-029 | US4.1–14; SC-006, SC-008, SC-011–012, SC-017 |
+| US5: responsive/time | Cross-cutting acceptance of US1–4; approved activity-local grid, local-window and visitor-date policies | FR-003–004, FR-019–022, FR-030 | US5.1–13; SC-002, SC-007–009, SC-014, SC-018 |
 
 Admin configuration is an operational prerequisite for a usable public catalog, even though
 public booking is the highest-priority value. Prepared synthetic schedules permit independent
@@ -674,8 +815,9 @@ bookings. P3 does not defer security, error clarity, or time correctness beyond 
   must be reconciled by contract owners; this specification does not invent response formats.
 - **G-003 — Approval status resolved**: The human project owner approved this specification
   and its checklist and ratified constitution `1.2.0` on 2026-10-25. The approval records identify
-  the reviewed source blobs. Technical planning is authorized; a plan, concrete contract
-  amendments, and implementation still require their respective reviews. ADRs labeled Accepted
+  the reviewed source blobs. The human subsequently approved the complete R-003 technical plan
+  on 2026-10-25, retaining T-02/T-03 conditions. Concrete contract amendments and implementation
+  still require their respective reviews. ADRs labeled Accepted
   in existing files are source records, not evidence of new human approval.
 - **G-004 — Cancellation boundary**: D-002 is resolved by the human choice recorded above:
   cancellation is administrator-only, with no guest self-service in the MVP. The PRD's open
@@ -709,6 +851,13 @@ bookings. P3 does not defer security, error clarity, or time correctness beyond 
   capability. Owners must document its date semantics and ensure a visitor date spanning
   activity dates is covered without omitted/duplicate starts. This may require combining
   existing activity-date results or an approved contract change; no approach is selected here.
+- **G-009 — Clock-alignment source follow-up**: A-001 resolves planning question P-01:
+  starts use exact activity-local minutes 00/15/30/45, with full continuous-window fit and the
+  existing DST behavior preserved. The PRD's 15-minute wording and canonical slots/booking
+  documentation must carry this origin and off-grid rejection through reviewed reconciliation.
+  No new API field or persisted-data migration is required by this amendment. The PRD and
+  canonical TypeSpec remain unchanged here; exact contract review, T-02 runtime verification
+  and T-03 operational acceptance remain pending, without implementation authorization.
 - Apart from these source/approval gaps, no new conflict with the PRD or
   constitution was found. Calendar synchronization, payments, multi-tenancy, external
   integrations, and the other existing exclusions remain outside this feature.
@@ -718,7 +867,7 @@ bookings. P3 does not defer security, error clarity, or time correctness beyond 
 D-001–D-012 are resolved by the fifteen recorded answers across three rounds. Earlier PRD
 defaults are superseded only by the explicit product choices below; no other defaults are
 silently adopted. Remaining work is source reconciliation, technical design, and verification,
-as identified in G-001–G-008 and the follow-up list below. The separate 2026-10-25 human approval
+as identified in G-001–G-009 and the follow-up list below. The separate 2026-10-25 human approval
 ratifies the constitution and authorizes planning; it does not approve concrete contract
 amendments, a technical plan, implementation, or deployment.
 
@@ -732,9 +881,9 @@ amendments, a technical plan, implementation, or deployment.
 | D-006 | Resolved: initially use detected visitor timezone, with activity-timezone fallback and manual IANA timezone selection; calendar dates group starts in the selected display timezone | Human selected visitor-first display; working windows/blocks retain activity-local dates; changing display timezone does not move appointments; date-result coverage requires G-008 follow-up | FR-003–005, FR-021; US5.6–8; SC-014 |
 | D-007 | Resolved: a fixed 60-minute session from login, with server-enforced expiration at the deadline and no automatic extension/renewal; credentials required again | Human selected option B; preserve only non-sensitive configuration drafts, clear/lock protected views, and require review plus explicit resubmission of failed changes; token-storage design remains for planning | FR-013–014, FR-028; US3.7, US3.13–14; SC-016 |
 | D-008 | Resolved: preserve existing booking start/end and status with administrator warning; apply changes to new bookings. Reject overlapping/duplicate and overnight windows; allow touching same-day windows without merging; a booking must fit one window | Human retained the earlier preservation policy and selected same-day non-overlapping windows; reject invalid replacements without partial changes; DST portions follow resolved D-005 | FR-004–005, FR-015–016, FR-023, FR-027; US3.8–12; SC-010, SC-015 |
-| D-009 | Resolved: use a private unpredictable per-attempt identifier, valid for 24 elapsed hours from first system receipt without extension; bind original details, reject mismatches, converge simultaneous retries, and omit contacts from retry confirmations | Human retained safe retry and selected A for its validity policy; expired identifiers reject rather than become new, unknown outcomes require host verification, and deliberate new attempts require new identifiers; no contact lookup or booking duplication/revival; contract reconciliation remains G-006 | FR-010–012, FR-022, FR-024; US2.7–9, US2.13–15; SC-011 |
+| D-009 | Resolved, amended by approved A-002/A-003: private unpredictable identifier; fixed E=T+24h from database timestamp persisted with binding in a successful durable admission transaction; delayed commit consumes validity; matching retry convergence/contact-free results | Original human answer preserved as history. A-002 clarifies T rather than commit metadata; rollback admits nothing and uncertain COMMIT stays unverified. A-003 permits only separately approved unrecoverable restore invalidation, distinct from expiry; normal restarts/transient failures preserve valid keys. No contact lookup, duplicate/revived booking or automatic replacement. | FR-008/010–012/022/024/029; US2.7–9/13–26, US4.13–14; SC-011/017 |
 | D-010 | Resolved: authenticated cancellation of an already canceled booking succeeds as a no-op and acknowledges the existing canceled state | Human selected successful no-op; preserve original cancellation time and 30-day retention deadline; no contact restoration or other booking changes; missing/unauthorized cases still fail as specified | FR-018, FR-022, FR-025; US4.5, US4.9–10; SC-008, SC-012 |
-| D-011 | Resolved: automatically delete guest contacts at 720 elapsed hours from recorded booking end or first successful cancellation; hide expired contacts on all reads even on cleanup failure; surface failures without extending retention | Human retained the 30-day period and selected contact-free backups/exports, with no private retry credentials or contact-bearing submissions; retained history is only reference/activity/start/end/status/original cancellation time, not promised irreversible anonymity; contact loss after restore is accepted; contract/design verification remains G-007 | FR-017, FR-019, FR-025, FR-029; US4.7–8, US4.11–12; SC-012, SC-017 |
+| D-011 | Resolved, with A-003 recovery clarification: automatically delete guest contacts at 720 elapsed hours from recorded booking end or first successful cancellation; hide expired contacts on all reads even on cleanup failure; surface failures without extending retention | Human retained the 30-day period and selected contact-free backups/exports, with no private retry credentials or contact-bearing submissions; retained history is only reference/activity/start/end/status/original cancellation time, not promised irreversible anonymity; contact loss after restore is accepted; A-003 separately permits qualified retry-state invalidation without contacts or automatic replacement, and T-03 requires backup/hosting controls; contract/design verification remains G-007 | FR-017, FR-019, FR-025, FR-029; US4.7–8, US4.11–12; SC-012, SC-017 |
 | D-012 | Resolved: every activity requires a multiline plain-text description of 1–2000 Unicode code points after outer trimming; reject blank/overlong values, preserve internal text, display markup literally | Human selected mandatory descriptions; full admin editing/validation and full public text before booking are required even if the catalog previews it; concrete PRD/TypeSpec changes still require review in G-001 | FR-002, FR-015, FR-031; US1.6, US3.15–16; SC-019 |
 
 Provisioning synthetic admin/activity examples and repeatable local setup remain planning
@@ -769,12 +918,12 @@ Required source updates for the next review, without modifying those sources in 
 
 | Source | Required change or reconciliation | Approval boundary |
 | --- | --- | --- |
-| PRD | Record the resolved blocked-date, cancellation, notice/horizon, visitor-date, window/DST, 60-minute authentication, 24-hour retry, retention/backup, and description requirements; replace open questions with the selected outcomes | Human review of the reconciled PRD; do not infer unrelated scope approval |
+| PRD | Record the resolved blocked-date, cancellation, notice/horizon, visitor-date, clock-aligned start grid (A-001), window/DST, 60-minute authentication, 24-hour retry from persisted admission T/E (A-002), distinct qualified recovery invalidation (A-003), retention/backup, and description requirements; replace open questions with the selected outcomes | Human review of the reconciled PRD; do not infer unrelated scope approval |
 | TypeSpec activity read/write models | Add the required description and express/document its outer trimming, 1–2000 code-point constraints, and plain-text behavior | Lead proposes exact contract changes; no generated or private fields substituted |
-| TypeSpec booking/retry operations | Define the private attempt identifier and 24-hour lifetime, detail binding, pending/final/mismatch/expired outcomes, and contact-free retry confirmations | Approve exact request/response/error shapes before dependent implementation |
+| TypeSpec booking/retry operations | Define private identifiers and immutable E=T+24h from persisted successful admission (A-002), verified pending/final/mismatch/chronological-expiry outcomes, distinct A-003 restore invalidation, phase-specific unverified failures and contact-free results | Approve exact request/response/error shapes before dependent implementation |
 | TypeSpec/admin history | Represent contact-removed records without requiring original attendee strings or invented placeholder identities; preserve cancellation/retention semantics | Review privacy and compatibility of the selected representation |
 | TypeSpec existing operations | Complete validation/error coverage; document fixed session expiration and repeated-cancellation outcomes | Agree concrete status/error definitions without introducing new product behavior |
-| TypeSpec availability/date semantics | State activity-local query semantics and account for visitor-date grouping across activity dates; review whether existing operations suffice | Review the proposed approach during planning; do not silently invent a date-query format |
+| TypeSpec availability/date semantics | State exact activity-local 00/15/30/45 starts and off-grid rejection under A-001; state activity-local query semantics and account for visitor-date grouping across activity dates; review whether existing operations suffice | Review the proposed approach during planning; do not silently invent a date-query format |
 
 Technical planning was authorized on 2026-10-25 with the following required scope:
 
@@ -786,7 +935,13 @@ Technical planning was authorized on 2026-10-25 with the following required scop
 Secure token storage, private-attempt generation/transport/expiry enforcement, purge/read/restore
 mechanisms, timezone computation, and repeatable provisioning are technical design decisions,
 not unresolved product choices. Concrete contract changes and implementation are not authorized.
-For this finalization step, commit the approved documents and stop before starting planning.
+The earlier specification-finalization commit is complete. On 2026-10-25 the human formally
+approved the complete R-003 technical plan, including A-001/A-002/A-003 and T-01–T-04, retaining
+T-02 runtime-verification and T-03 backup/hosting conditions. The approved specification revision
+is Git blob `e4d75a0fd79dfaeec48e36b7457cd4d6c32c0656`; only approval/status records change now.
+The human authorizes a local documentation-baseline commit, followed by a report and stop.
+No tasks, canonical contract change, application implementation or push is authorized.
+See [formal technical-plan approval](checklists/technical-review.md).
 
 ## Success Criteria *(mandatory)*
 
@@ -799,8 +954,11 @@ The cases below preserve the recorded clarification policies approved on 2026-10
   activities are offered; each offered activity shows name, description/preview, and duration,
   with full description available before booking (US1).
 - **SC-002**: For every approved ordinary-date test schedule, displayed starts exactly match
-  eligible 15-minute increments: zero past, blocked, out-of-window, or occupied appointments
-  are offered; a complete duration fits each offered window. Every blocking case uses the
+  eligible activity-local clock minutes 00/15/30/45 with zero seconds/fractional seconds:
+  zero past, blocked, off-grid, out-of-window, or occupied appointments are offered or accepted;
+  a complete duration fits each offered window. For a 30-minute activity in a 09:10–10:00 window,
+  exactly 09:15 and 09:30 remain eligible when otherwise available; a 09:10–09:40 window offers
+  none. Grid alignment is unchanged by visitor display timezone. Every blocking case uses the
   activity-local date, excludes zero otherwise eligible choices from other activities, and
   changes zero existing confirmed bookings (US1/US3).
 - **SC-003**: A guest can complete browse → date → slot → name/email → on-screen confirmation
@@ -833,12 +991,19 @@ The cases below preserve the recorded clarification policies approved on 2026-10
   or their date becomes blocked. Every affected-booking case warns the administrator; zero
   bookings are automatically canceled. New booking choices use the changed rules and still
   exclude preserved confirmed intervals (US3).
-- **SC-011**: Across lost-response, repeated-retry, and concurrent-retry cases for one attempt,
-  at most one booking identity is created. Valid matching retries return its existing outcome;
-  expired retries at/after 24 elapsed hours reject, never create a new attempt, and never extend
-  expiry. Every different-details retry is rejected without original-detail disclosure; zero
-  retry confirmations contain guest name/email. A canceled booking is never revived, and no
-  retry accesses another attempt through contact lookup or changes a final rejection (US2).
+- **SC-011**: Across lost-response, repeated/concurrent-retry and crash/timeout cases for one
+  attempt, at most one booking identity is created. For committed admission, E=T+24h from the
+  persisted database timestamp, never commit metadata/ACK/retry time. Commit delay consumes the
+  fixed window, and commit at/after E yields expiry without execution/pending. Rollback admits
+  nothing through that transaction; uncertain COMMIT produces zero unsupported confirmations,
+  ordinary pending claims or assumed rollbacks. Before E, matching committed retries return the
+  known result or verified unfinished state; mismatches reject generically. At/after E current-
+  generation retry yields 410 attempt_expired. Only a qualified A-003 recovery produces distinct
+  409 attempt_invalidated_by_restore for lost-generation keys, including unexpired ones. Normal
+  restart/transient failures preserve original valid state. Zero automatic new-key fallback,
+  contact-bearing retry confirmations, duplicate/revived bookings or changed final rejections.
+
+
 - **SC-012**: In every non-canceled and canceled retention-boundary case, retained history
   and recovery results contain zero original guest names/emails at or after the applicable
   720-hour deadline, including cleanup-failure cases; deletion failures are surfaced accurately.
@@ -864,7 +1029,9 @@ The cases below preserve the recorded clarification policies approved on 2026-10
 - **SC-017**: Every inspected backup/export/restore acceptance case contains zero guest
   names/emails, contact-bearing submission copies, or private retry credentials. Restores
   reintroduce zero removed contacts or expired retry access; retained history contains only
-  permitted fields, and unavailable guest contacts are represented honestly (US4).
+  permitted fields, and unavailable guest contacts are represented honestly. Qualified A-003
+  recovery invalidation returns distinct 409 feedback and host verification, while ordinary
+  chronological expiry stays 410; normal restarts preserve valid identifiers (US2/US4).
 - **SC-018**: In every skipped/repeated-boundary fixture, 100% of offered intervals fit one
   continuous real portion of one configured local window. Zero intervals shift a boundary,
   cross an excluded portion, or extend its end. Both otherwise eligible repeated starts have
