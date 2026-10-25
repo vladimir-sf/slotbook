@@ -1,0 +1,2913 @@
+openapi: 3.0.0
+info:
+  title: SlotBook API
+  version: 1.0.0
+  description: |-
+    SlotBook API v1 (1.0.0), human-approved and frozen on 2026-10-25.
+    Based on the approved C-002 contract review, technical baseline 5f1ce85 and
+    amendments A-001/A-002/A-003. Contract freeze does not authorize implementation.
+    Lead coordinates changes under approved change control; material API changes need
+    human approval. Frontend/Backend must not independently edit the canonical contract
+    or generated API artifacts.
+    All response instants are RFC 3339 UTC Z; explicit-offset input is normalized to UTC,
+    and naive input is rejected. Only JSON bodies are supported; 204 has no body.
+    Never log request/response bodies, Authorization, Idempotency-Key or validator inputs.
+    Configure CORS for explicit frontend origins, allow Authorization/Idempotency-Key and
+    expose X-Preserved-Booking-Count, X-Attempt-Expires-At and Retry-After.
+    No auth cookies, guest accounts, guest cancellation or external integrations.
+    T-02 remains provisional pending PostgreSQL concurrency/crash/timeout/idempotency tests;
+    T-03 remains conditional on validated contact-free backup and hosting controls.
+tags: []
+paths:
+  /api/activities:
+    get:
+      operationId: Activities_list
+      description: Active activities only, including mandatory full descriptions.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activity'
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+  /api/activities/{slug}:
+    get:
+      operationId: Activities_detail
+      description: Missing/inactive activity returns not_found; no contacts.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - not_found
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+  /api/activities/{slug}/slots:
+    get:
+      operationId: Activities_slots
+      description: |-
+        date groups starts by selected displayTimezone (defaults to activity zone when omitted).
+        Include every relevant activity-local date; sort/deduplicate by UTC start. Browser starts
+        with detected visitor zone, fallback activity zone, and permits manual IANA selection.
+        Eligibility uses activity-local windows/blocks, exact local minutes 00/15/30/45 and zero
+        seconds/fractions, independently of display zone/window opening. Full elapsed [start,end)
+        fits one continuous real portion of one window, end may equal boundary. Skip nonexistent
+        local starts; offer both eligible repeated instants with distinct offsets in display.
+        Never shift missing boundaries, bridge excluded portions, extend/merge windows or round.
+        At fresh time N: N+1h <= start <= N+1440h, inclusive; only start is horizon-constrained.
+        Omit past/blocked/inactive/occupied/ineligible slots; 200 [] differs from load failure.
+        A 30m activity in 09:10–10:00 permits 09:15/09:30; 09:10–09:40 permits none.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          explode: false
+        - name: displayTimezone
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/IanaTimezone'
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Slot'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - not_found
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+  /api/admin/activities:
+    get:
+      operationId: Admin_listActivities
+      description: Include inactive offerings so existing configuration can be managed.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activity'
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      security:
+        - BearerAuth: []
+    post:
+      operationId: Admin_createActivity
+      description: Validate description/duration/IANA zone/unique slug; preserve existing 200 success status.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '409':
+          description: The request conflicts with the current state of the server.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - slug_conflict
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityWrite'
+      security:
+        - BearerAuth: []
+  /api/admin/activities/{id}:
+    put:
+      operationId: Admin_updateActivity
+      description: |-
+        Preserve all existing start/end/status for title/description/slug/duration/zone/active changes.
+        New rules apply only to new attempts; warn using affected-confirmed-booking count.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Preserved-Booking-Count:
+              required: true
+              description: Nonnegative affected-confirmed-booking count; warn while preserving their intervals/status.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - not_found
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '409':
+          description: The request conflicts with the current state of the server.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - slug_conflict
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityWrite'
+      security:
+        - BearerAuth: []
+  /api/admin/activities/{id}/blocked-dates:
+    get:
+      operationId: Admin_getBlockedDates
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlockedDate'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - not_found
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      security:
+        - BearerAuth: []
+    post:
+      operationId: Admin_blockDate
+      description: Per-activity local date; same block returns existing state; never mutate/cancel bookings. No unblock feature.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Preserved-Booking-Count:
+              required: true
+              description: Nonnegative affected-confirmed-booking count; warn while preserving their intervals/status.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedDate'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - not_found
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockedDate'
+      security:
+        - BearerAuth: []
+  /api/admin/activities/{id}/weekly-windows:
+    get:
+      operationId: Admin_getWindows
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeeklyWindow'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - not_found
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      security:
+        - BearerAuth: []
+    put:
+      operationId: Admin_replaceWindows
+      description: Atomic replacement, including empty set; reject invalid set without partial changes. Preserve bookings.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Preserved-Booking-Count:
+              required: true
+              description: Nonnegative affected-confirmed-booking count; warn while preserving their intervals/status.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeeklyWindow'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - not_found
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WeeklyWindow'
+      security:
+        - BearerAuth: []
+  /api/admin/bookings:
+    get:
+      operationId: Admin_listBookings
+      description: All confirmed/canceled history; present/removed contacts according to current deadline check.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminBooking'
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      security:
+        - BearerAuth: []
+  /api/admin/bookings/{id}:
+    delete:
+      operationId: Admin_cancelBooking
+      description: |-
+        Confirmed -> canceled; repeated/concurrent cancellation is successful 204 no-op acknowledging
+        current canceled state. Preserve original canceledAt and its 720h deletion anchor; no contact
+        restoration. Free otherwise eligible slots; other bookings unaffected. Missing ID is 404,
+        invalid ID 400 after authentication. Cancellation is administrator-only; no guest operation.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '404':
+          description: The server cannot find the requested resource.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - not_found
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      security:
+        - BearerAuth: []
+  /api/auth/login:
+    post:
+      operationId: Auth_login
+      description: Single seeded admin; generic invalid credentials; no sign-up/refresh/automatic write replay.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminToken'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCredentials'
+  /api/auth/session:
+    delete:
+      operationId: Auth_logout
+      description: Revoke the presented session verifier and clear browser memory. Expired/invalid bearer is 401.
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+        '401':
+          description: Authenticate BEFORE protected resource lookup/body validation, including malformed JSON.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            WWW-Authenticate:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - Bearer
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - unauthorized
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+      security:
+        - BearerAuth: []
+  /api/booking-attempts/context:
+    get:
+      operationId: BookingAttempts_getContext
+      description: |-
+        Public generation only, no booking/guest lookup. Failure blocks NEW attempt creation;
+        retain an existing private key/details for explicit recovery. Routine missing state fails
+        readiness; never rotate generation on normal restart/transient failure.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttemptContext'
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+  /api/bookings:
+    post:
+      operationId: Bookings_create
+      description: |-
+        A-002: admit only when original binding and DB-generated wall-clock T/E commit durably;
+        E=T+24 elapsed hours, NOT commit metadata/HTTP/ACK/retry time. Stamp T late after key
+        contention/preparation; never restamp a committed attempt. Delayed COMMIT consumes
+        validity; commit at/after E is already expired, with no execution/pending/result access.
+        Rollback admits nothing through that transaction; uncertain COMMIT stays unverified.
+        Revalidate current availability, local quarter-hour grid, full-window fit, blocks and
+        inclusive 1h/1440h start bounds after lock waits using fresh database wall-clock time.
+        DB exclusion prevents same-activity confirmed overlap, allowing adjacency. Configuration
+        writes/cancellation serialize with booking eligibility. Execution commits booking/contact/
+        result together; no confirmation until known committed. Split protocol remains T-02 provisional.
+        Same key + matching details: return stable rejection or same booking/current status;
+        completed success replays 200 without eligibility reevaluation or revival. Distinct
+        competing keys: one 201/one 409 slot_unavailable. Before E mismatch is generic 409.
+        Pending 202 ONLY on fallback/contention after proven committed matching unexpired
+        unfinished admission. Roll back failed lock/deadlock/timeout transactions before fresh
+        committed-state classification. Missing proof yields phase-specific unverified 503.
+        At/after E current-generation key returns 410 before binding/result access; tombstones
+        prevent reuse. Normal restarts preserve original generation/T/E/binding/results.
+        A-003: separately approved unrecoverable, fenced restore may invalidate old generations
+        (even unexpired) with 409 attempt_invalidated_by_restore, distinct from 410. It proves no
+        age/admission/booking failure. Unknown/expired/invalidated outcomes direct host verification;
+        no automatic new key or blind resubmission. Retrying requires original details and key;
+        no key-only/contact lookup. Lost browser memory uses host verification.
+        Known admitted terminal errors carry original expiry; unverified admission/restore loss
+        omit it. 500/503 on a mutation never by themselves prove rejection or rollback.
+        Malformed JSON/type/unknown fields map to 400 validation_failed, never framework 422/HTML.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/BookingAttemptKey'
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Attempt-Expires-At:
+              required: true
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingSummary'
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Attempt-Expires-At:
+              required: true
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingSummary'
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Attempt-Expires-At:
+              required: true
+              schema:
+                type: string
+                format: date-time
+            Retry-After:
+              required: true
+              description: Integer seconds until an explicit same-key retry is suggested; not automatic replay.
+              schema:
+                type: integer
+                format: int32
+                minimum: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttemptPending'
+        '400':
+          description: Optional only because malformed keys/unverified receipts cannot prove admission.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Attempt-Expires-At:
+              required: false
+              description: Original E is REQUIRED when receipt is verified; omit if unknown. Never reset on retry.
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - validation_failed
+                      - slot_ineligible
+                      - notice_required
+                      - horizon_exceeded
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FieldError'
+                additionalProperties: false
+        '409':
+          description: Optional only because malformed keys/unverified receipts cannot prove admission.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Attempt-Expires-At:
+              required: false
+              description: Original E is REQUIRED when receipt is verified; omit if unknown. Never reset on retry.
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - slot_unavailable
+                          - attempt_mismatch
+                      message:
+                        type: string
+                        description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                    additionalProperties: false
+                  - type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - attempt_invalidated_by_restore
+                      message:
+                        type: string
+                        description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                    additionalProperties: false
+        '410':
+          description: Client error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Attempt-Expires-At:
+              required: true
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - attempt_expired
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+            X-Attempt-Expires-At:
+              required: false
+              description: Original E is REQUIRED when receipt is verified; omit if unknown. Never reset on retry.
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - admission_unverified
+                      message:
+                        type: string
+                        description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                    additionalProperties: false
+                  - type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - execution_unverified
+                      message:
+                        type: string
+                        description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                    additionalProperties: false
+                  - type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                        enum:
+                          - service_unavailable
+                      message:
+                        type: string
+                        description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                    additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+  /health:
+    get:
+      operationId: Operations_health
+      description: Shallow liveness only; no guest/credential/database detail. Does not prove MVP behavior.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - ok
+                required:
+                  - status
+                additionalProperties:
+                  not: {}
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+  /ready:
+    get:
+      operationId: Operations_ready
+      description: |-
+        Ready only when DB/schema/durability/generation/retention-worker checks pass. Otherwise
+        generic service_unavailable, with no public operator inventory/connection/credential detail.
+        Detailed worker failures are operator CLI output, not a public diagnostic endpoint.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - ready
+                required:
+                  - status
+                additionalProperties:
+                  not: {}
+        '500':
+          description: Server error
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - internal_error
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+        '503':
+          description: Service unavailable.
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - service_unavailable
+                  message:
+                    type: string
+                    description: Safe human-readable text without contacts, tokens, original attempt values or stack traces.
+                additionalProperties: false
+security:
+  - {}
+components:
+  schemas:
+    Activity:
+      type: object
+      required:
+        - slug
+        - title
+        - durationMinutes
+        - timezone
+        - isActive
+        - description
+        - id
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        durationMinutes:
+          $ref: '#/components/schemas/ActivityDuration'
+        timezone:
+          $ref: '#/components/schemas/IanaTimezone'
+        isActive:
+          type: boolean
+        description:
+          $ref: '#/components/schemas/NormalizedActivityDescription'
+        id:
+          $ref: '#/components/schemas/Id'
+      additionalProperties: false
+    ActivityDescription:
+      type: string
+      description: |-
+        After outer whitespace trimming: 1–2000 Unicode code points, multiline literal plain
+        text. Preserve internal whitespace/line breaks; never truncate or interpret markup.
+        Input is trimmed before length validation; raw surrounding whitespace is not counted.
+        Runtime must count Unicode code points, not UTF-16 code units.
+    ActivityDuration:
+      type: integer
+      format: int32
+      minimum: 15
+      description: Positive integer divisible by 15; enforced by both schema and server validation.
+      multipleOf: 15
+    ActivityWrite:
+      type: object
+      required:
+        - slug
+        - title
+        - description
+        - durationMinutes
+        - timezone
+        - isActive
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        description:
+          $ref: '#/components/schemas/ActivityDescription'
+        durationMinutes:
+          $ref: '#/components/schemas/ActivityDuration'
+        timezone:
+          $ref: '#/components/schemas/IanaTimezone'
+        isActive:
+          type: boolean
+      additionalProperties: false
+    AdminBooking:
+      type: object
+      required:
+        - id
+        - activityId
+        - startsAt
+        - endsAt
+        - status
+        - canceledAt
+        - contact
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        activityId:
+          $ref: '#/components/schemas/Id'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+            - confirmed
+            - canceled
+        canceledAt:
+          type: string
+          format: date-time
+          nullable: true
+        contact:
+          $ref: '#/components/schemas/BookingContact'
+      additionalProperties: false
+      description: |-
+        Protected history. Suppress contacts before serialization at/after recorded end +720h,
+        or first cancellation +720h when canceled, even if automatic deletion fails. Repeated
+        cancellation/config edits/retries never reset the anchor; restores may remove contacts earlier.
+    AdminCredentials:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          type: string
+      additionalProperties: false
+    AdminToken:
+      type: object
+      required:
+        - accessToken
+        - tokenType
+        - expiresAt
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum:
+            - bearer
+        expiresAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      description: |-
+        Opaque bearer kept only in browser memory (no browser storage/URL). Server-enforced
+        fixed 60 elapsed minutes from login; active use never extends it; no refresh/renewal.
+        Reload requires login. At expiry clear/lock protected state, retain only non-sensitive
+        config drafts, and require credentials plus explicit resubmission of failed writes.
+    AttemptContext:
+      type: object
+      required:
+        - generation
+      properties:
+        generation:
+          $ref: '#/components/schemas/AttemptGeneration'
+      additionalProperties: false
+    AttemptGeneration:
+      type: string
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+      format: uuid
+      description: Public random restore epoch, a canonical lowercase UUID; not a credential.
+    AttemptPending:
+      type: object
+      required:
+        - state
+        - expiresAt
+      properties:
+        state:
+          type: string
+          enum:
+            - pending
+        expiresAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      description: Admitted but unfinished at the verified read; no promised background worker.
+    AttendeeName:
+      type: string
+      pattern: \S
+      description: Nonblank name; preserve the exact submitted string for retry matching.
+    BlockedDate:
+      type: object
+      required:
+        - date
+      properties:
+        date:
+          type: string
+          format: date
+      additionalProperties: false
+      description: One activity-local date; other activities and existing bookings remain unchanged.
+    BookingAttemptKey:
+      type: string
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$
+      description: |-
+        Echo the context generation verbatim, then '.', then canonical unpadded base64url
+        encoding of 32 cryptographically random bytes (43 characters). Generate before first
+        submission, keep private in memory, reuse only with original details. Never put in URLs.
+        The server HMAC verifier is never an accepted credential.
+    BookingContact:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/PresentContacts'
+        - $ref: '#/components/schemas/RemovedContacts'
+      discriminator:
+        propertyName: state
+        mapping:
+          present: '#/components/schemas/PresentContacts'
+          removed: '#/components/schemas/RemovedContacts'
+    BookingRequest:
+      type: object
+      required:
+        - activityId
+        - startsAt
+        - attendeeName
+        - attendeeEmail
+      properties:
+        activityId:
+          $ref: '#/components/schemas/Id'
+        startsAt:
+          type: string
+          format: date-time
+        attendeeName:
+          $ref: '#/components/schemas/AttendeeName'
+        attendeeEmail:
+          $ref: '#/components/schemas/Email'
+      additionalProperties: false
+      description: |-
+        Unknown fields are rejected, including endsAt. Derive end from current activity duration.
+        Match activity UUID and UTC start canonically; name/email remain exact submitted strings.
+        JSON/type-invalid submissions bind a versioned raw-body digest, never stored raw bytes.
+    BookingSummary:
+      type: object
+      required:
+        - id
+        - activityId
+        - startsAt
+        - endsAt
+        - status
+        - canceledAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        activityId:
+          $ref: '#/components/schemas/Id'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+            - confirmed
+            - canceled
+        canceledAt:
+          type: string
+          format: date-time
+          nullable: true
+      additionalProperties: false
+      description: |-
+        EVERY public success is contact-free, including the first confirmation. Start/end remain
+        immutable after booking. canceledAt is null iff status is confirmed; otherwise it is the
+        original cancellation instant. Retries return current status, never revive a canceled booking.
+    Email:
+      type: string
+      format: email
+      description: Syntactically valid email; no delivery check or additional identity normalization.
+    FieldError:
+      type: object
+      required:
+        - path
+        - code
+        - message
+      properties:
+        path:
+          type: string
+          description: Dotted contracted input path (array indexes allowed); unknown field names use "$".
+        code:
+          type: string
+          enum:
+            - required
+            - invalid
+            - unknown_field
+            - overlap
+            - duplicate
+          description: 'Stable field reason: required, invalid, unknown_field, overlap or duplicate.'
+        message:
+          type: string
+      additionalProperties: false
+      description: Safe field guidance only; never echo submitted values or raw framework validation objects.
+    HealthStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+      additionalProperties: false
+    IanaTimezone:
+      type: string
+      description: Supported IANA timezone identifier, validated against server timezone data.
+    Id:
+      type: string
+      format: uuid
+    LocalClock:
+      type: string
+      pattern: ^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9](?:\.[0-9]+)?)?$
+      description: |-
+        ISO local clock without offset: HH:mm, optionally :ss and fractional seconds.
+        Retains local-clock precision without imposing a quarter-hour/minute restriction.
+        Explicit pattern avoids plainTime's emitted `format: time`, which RFC 3339 validators
+        interpret as requiring a timezone even though working-window clocks have none.
+    NoStore:
+      type: object
+    NormalizedActivityDescription:
+      type: string
+      description: Canonical saved/read description, after the documented input trimming step.
+      minLength: 1
+      maxLength: 2000
+    PresentContacts:
+      type: object
+      required:
+        - state
+        - attendeeName
+        - attendeeEmail
+      properties:
+        state:
+          type: string
+          enum:
+            - present
+        attendeeName:
+          $ref: '#/components/schemas/AttendeeName'
+        attendeeEmail:
+          $ref: '#/components/schemas/Email'
+      additionalProperties: false
+    ReadyStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ready
+      additionalProperties: false
+    RemovedContacts:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          type: string
+          enum:
+            - removed
+      additionalProperties: false
+      description: No attendee fields or fake identities; also used after contact-free restore.
+    Slot:
+      type: object
+      required:
+        - startsAt
+        - endsAt
+      properties:
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      description: Contact-free UTC interval; display labels/offsets are derived in the chosen IANA zone.
+    WeeklyWindow:
+      type: object
+      required:
+        - isoWeekday
+        - localStart
+        - localEnd
+      properties:
+        isoWeekday:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 7
+        localStart:
+          $ref: '#/components/schemas/LocalClock'
+        localEnd:
+          $ref: '#/components/schemas/LocalClock'
+      additionalProperties: false
+      description: |-
+        Same activity/weekday: end > start within one local day, no duplicate/overlap/overnight
+        windows. Touching is allowed but never merged. Times retain offset-free local-clock precision and
+        need not align to quarter hours. Invalid replacement changes nothing.
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: Bearer
+servers:
+  - url: http://localhost:8000
+    description: Local API
+    variables: {}
