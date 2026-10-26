@@ -24,8 +24,10 @@ Backend's branch HEAD, dirty-file inventory and both uncommitted T007 file hashe
 checked before and after verification and preserved. The final progress commit changes
 only this record and the shared task list.
 
-The `.github/README.md` handoff describes QA's pre-commit review and local checks;
+The `.github/CI_HANDOFF.md` handoff describes QA's pre-commit review and local checks;
 its historical uncommitted/not-yet-pushed status is superseded by this completion record.
+It was originally committed as `.github/README.md` and renamed because GitHub prioritizes
+that location over the root project README when choosing the repository introduction.
 Earlier T001-only/first-batch authorization notes also remain historical records.
 
 ## Post-merge checks
