@@ -1,0 +1,52 @@
+name: SlotBook initial tooling CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tooling-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# No persisted dependency caches, secrets, service databases, deployment or artifact uploads.
+# Runtime/PostgreSQL suites belong to T022/T087; these jobs verify tooling/scaffolds only.
+env:
+  TZ: UTC
+  PYTHONTZPATH: ''
+  CI: 'true'
+
+jobs:
+  tooling:
+    name: Tooling / ${{ matrix.lane }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [contract, backend, frontend, qa]
+    steps:
+      - name: Check out candidate and frozen contract history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12.12'
+          check-latest: false
+      - name: Set up Node
+        if: matrix.lane != 'backend'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.22.0'
+          check-latest: false
+          package-manager-cache: false
+      - name: Run locked checks with private raw output
+        env:
+          SLOTBOOK_CI_LANE: ${{ matrix.lane }}
+        run: python .github/ci/checks.py "$SLOTBOOK_CI_LANE"
