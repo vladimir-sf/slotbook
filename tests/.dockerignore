@@ -1,0 +1,4 @@
+# Send only the lock and Dockerfile to the image builder. No local control/reports/tool installs.
+**
+!Dockerfile
+!requirements.lock

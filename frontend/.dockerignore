@@ -1,0 +1,30 @@
+# Allow only the production Vite inputs and the reviewed dependency lock.
+# Tests, host node_modules/dist, reports, .git, .npmrc and private state stay out.
+**
+!package.json
+!package-lock.json
+!index.html
+!tsconfig.json
+!vite.config.ts
+!src/
+!src/**
+!public/
+!public/**
+
+# Deny private or generated files even when nested under an allowed source tree.
+**/.env
+**/.env.*
+**/.npmrc
+**/.git
+**/.aws
+**/.codex
+**/.agents
+**/.cache
+**/node_modules
+**/dist
+**/test-results
+**/playwright-report
+**/coverage
+**/*.log
+**/*.pem
+**/*.key

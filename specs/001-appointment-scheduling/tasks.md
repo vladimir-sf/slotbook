@@ -1,20 +1,41 @@
 ---
-description: "Approved SlotBook MVP tasks; T001 complete, all other tasks unstarted"
+description: "Approved SlotBook MVP tasks; T001–T006 and T008 complete, 85 tasks remain unchecked"
 ---
 
 # Tasks: SlotBook Appointment Scheduling MVP
 
-**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001 complete after verified committed handoff; 91 tasks remain unchecked and unstarted.
+**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001–T006 and T008 complete after reviewed integration and passing post-merge verification; 85 tasks remain unchecked, including in-progress T007.
 **Original baseline approval scope**: The human project owner approved the refined 92-task plan and protocol,
 subject to final file verification, and authorized only their baseline commit. This records task
 approval, not permission to start execution, create worktrees, launch agents, push, merge or deploy.
-**Current scoped authorization (2026-10-25)**: The human subsequently authorized T001 only.
+**Historical T001 authorization (2026-10-25)**: The human initially authorized T001 only.
 The human subsequently authorized T001 finalization and its local documentation commit.
 H0 is satisfied for that handoff scope, not any other task or agent/worktree setup.
 The [handoff record](../../docs/IMPLEMENTATION_BASELINE.md) records the reviewed source and
 publication checks. T001 was marked complete only after its handoff was committed and verified;
 completion metadata is finalized in the new local baseline. No T002–T092 execution, push,
-merge, deploy or recovery is authorized by this turn.
+merge, deploy or recovery was authorized by that historical T001 turn.
+**First batch completion (2026-10-25)**: The human separately approved T002–T005's reviewed
+source commits, the scoped dependency-security maintenance, local non-fast-forward integration
+and a completion-documentation commit after all mandatory checks pass. Verified Lead merge:
+`252ffb114a7ad164380fc17e01cad4a241a537d7`; security commit:
+`4fec8d178fa7819bb937e304b06282ff541ec585`. All post-merge checks and evidence sanitization
+passed before the four completion markers were changed. Full source references, commands,
+counts, versions and sanitized evidence identities are in the
+[completion record](../../docs/reviews/foundation-tooling.md).
+That approval completed the first tooling batch, not the remaining setup tasks or T024, and
+did not authorize later tasks or publication. T-02 stays provisional; T-03 stays conditional
+on their future runtime/hosting evidence.
+**CI / Frontend image completion (2026-10-26)**: The human explicitly authorized committing
+T006, non-fast-forward integration of T008 and T006 independently of T007, post-merge checks,
+this progress record and publication of `001-appointment-scheduling`. Verified Lead merge:
+`1781e5afd45e02d2195679232d0402e9e597dfd7`. All four local CI lanes and the Frontend
+image build/serving checks passed before these two markers were set. Source commits,
+commands, sanitized evidence and known development-image vulnerabilities are recorded in
+the [completion record](../../docs/reviews/ci-frontend-image.md). T007 remains unchecked;
+its uncommitted Backend work was neither merged nor modified. Production deployment still
+requires remediation or explicit risk acceptance of the recorded image findings. This
+authorization does not start further tasks, approve main integration, or permit deployment.
 **Frozen source baseline**: `adc0b83a4408493ac44d3a7571dfd3d25a758679` on actual branch
 `001-appointment-scheduling` (verified clean before generation; one local commit ahead of origin).
 **Inputs**: [constitution](../../.specify/memory/constitution.md), [spec.md](spec.md),
@@ -22,7 +43,7 @@ merge, deploy or recovery is authorized by this turn.
 [data-model.md](data-model.md), [quickstart.md](quickstart.md),
 [shared ownership](../../docs/AGENT_TASKS.md), [canonical API v1](../../contracts/main.tsp),
 [frozen review](contracts/canonical-review.md), [retry protocol](contracts/retry-protocol.md),
-and [execution protocol](../../docs/EXECUTION_PROTOCOL.md) (approved coordination baseline; only T001 finalization/local commit is authorized).
+and [execution protocol](../../docs/EXECUTION_PROTOCOL.md) (approved coordination rules; subsequent scoped batch approval and completion are recorded above).
 
 ## Authority, format and ownership
 
@@ -74,22 +95,23 @@ changing shared ownership; T001 records its reviewed revision before execution.
 - [X] T001 Owner: Lead/Architect — Publish the approved task revision, component interfaces and isolated-worktree handoff; correct historical no-tasks/no-freeze status without changing ownership. Paths: `docs/IMPLEMENTATION_BASELINE.md`, `docs/AGENT_TASKS.md`, `docs/EXECUTION_PROTOCOL.md`. Depends: H0. Accept: All owners start from one reviewed committed descendant of adc0b83 containing approved tasks/protocol; record full baseline/component hashes and protocol revision, component image/CLI handoffs, isolated projects/ports and per-milestone evidence manifest. QA uses selected clean component contexts without branch merges; correct the shared guide status. No agent starts before H0; no credentials or machine-specific state enter committed records.
   T001 completion (2026-10-25): documentation/interface/isolation handoff committed and verified
   before this marker was set; verification is recorded in docs/IMPLEMENTATION_BASELINE.md.
-  Completion metadata is finalized in the new local baseline. T002–T005 are dependency-ready;
-  all downstream tasks remain unstarted and require separate authorization.
+  Completion metadata was finalized in the T001 baseline. T002–T005 were then dependency-ready;
+  their later reviewed completion is recorded above. T006–T092 remain unstarted and require
+  separate authorization.
 
-- [ ] T002 [P] Owner: Backend — Lock the declared backend runtime/test dependencies and configure pytest markers, static checks and private test fixtures. Paths: `backend/requirements.txt`, `backend/requirements.lock`, `backend/pyproject.toml`, `backend/pytest.ini`, `backend/tests/__init__.py`, `backend/tests/conftest.py`, `backend/tests/support/__init__.py`, `backend/tests/support/clock.py`, `backend/tests/support/faults.py`. Depends: T001. Accept: Python 3.12 locked install includes pinned development Ruff/mypy and tzdata; from backend/, python -m ruff check app tests, python -m ruff format --check app tests and python -m mypy app execute, with no blanket suppressions. Pytest markers collect with importlib mode; private clock/fault interfaces and subprocess fixtures follow the execution protocol, never HTTP parameters/routes or production test switches. Record compatibility warnings.
+- [X] T002 [P] Owner: Backend — Lock the declared backend runtime/test dependencies and configure pytest markers, static checks and private test fixtures. Paths: `backend/requirements.txt`, `backend/requirements.lock`, `backend/pyproject.toml`, `backend/pytest.ini`, `backend/tests/__init__.py`, `backend/tests/conftest.py`, `backend/tests/support/__init__.py`, `backend/tests/support/clock.py`, `backend/tests/support/faults.py`. Depends: T001. Accept: Python 3.12 locked install includes pinned development Ruff/mypy and tzdata; from backend/, python -m ruff check app tests, python -m ruff format --check app tests and python -m mypy app execute, with no blanket suppressions. Pytest markers collect with importlib mode; private clock/fault interfaces and subprocess fixtures follow the execution protocol, never HTTP parameters/routes or production test switches. Record compatibility warnings.
 
-- [ ] T003 [P] Owner: Frontend — Add a locked Playwright-based frontend test command and frozen-contract fixture validation. Paths: `frontend/package.json`, `frontend/package-lock.json`, `frontend/playwright.config.ts`, `frontend/tests/fixtures/api.ts`, `frontend/tests/scaffold.spec.ts`. Depends: T001. Accept: npm ci, npm run build and npm run test collect a real baseline; pin Playwright package/browser revision through the lock and record versions. Generated schema.d.ts is read-only; typed fixtures match API v1; JUnit output uses the per-run private report directory for QA sanitization; no new production test routes or persisted credentials.
+- [X] T003 [P] Owner: Frontend — Add a locked Playwright-based frontend test command and frozen-contract fixture validation. Paths: `frontend/package.json`, `frontend/package-lock.json`, `frontend/playwright.config.ts`, `frontend/tests/fixtures/api.ts`, `frontend/tests/scaffold.spec.ts`. Depends: T001. Accept: npm ci, npm run build and npm run test collect a real baseline; pin Playwright package/browser revision through the lock and record versions. Generated schema.d.ts is read-only; typed fixtures match API v1; JUnit output uses the per-run private report directory for QA sanitization; no new production test routes or persisted credentials.
 
-- [ ] T004 [P] Owner: QA/DevOps — Create QA-owned locked HTTPX/schema and Playwright harnesses with redacted evidence output. Paths: `tests/requirements.txt`, `tests/requirements.lock`, `tests/pytest.ini`, `tests/conftest.py`, `tests/harness/runner.py`, `tests/harness/targets.py`, `tests/harness/evidence.py`, `tests/contract/test_schema_fixtures.py`, `tests/e2e/package.json`, `tests/e2e/package-lock.json`, `tests/e2e/playwright.config.ts`, `tests/Dockerfile`. Depends: T001. Accept: Locked HTTPX/schema/Playwright tools collect black-box tests without app imports; pin QA FROM images by release and digest and the browser revision by lock. Host runner supplies check/run/collect commands, validates disposable target manifest/approval scope, and publishes allowlisted evidence to ignored test-results/<run-id>/; raw fixtures/control/JUnit stay private. Initially verify guard/redaction tests; lifecycle adapters become executable in T022. HAR, sensitive screenshots, traces, videos and storage dumps remain disabled.
+- [X] T004 [P] Owner: QA/DevOps — Create QA-owned locked HTTPX/schema and Playwright harnesses with redacted evidence output. Paths: `tests/requirements.txt`, `tests/requirements.lock`, `tests/pytest.ini`, `tests/conftest.py`, `tests/harness/runner.py`, `tests/harness/targets.py`, `tests/harness/evidence.py`, `tests/contract/test_schema_fixtures.py`, `tests/e2e/package.json`, `tests/e2e/package-lock.json`, `tests/e2e/playwright.config.ts`, `tests/Dockerfile`. Depends: T001. Accept: Locked HTTPX/schema/Playwright tools collect black-box tests without app imports; pin QA FROM images by release and digest and the browser revision by lock. Host runner supplies check/run/collect commands, validates disposable target manifest/approval scope, and publishes allowlisted evidence to ignored test-results/<run-id>/; raw fixtures/control/JUnit stay private. Initially verify guard/redaction tests; lifecycle adapters become executable in T022. HAR, sensitive screenshots, traces, videos and storage dumps remain disabled.
 
-- [ ] T005 Owner: Lead/Architect — Promote generation/schema/type drift checks into a shared executable verification entry point without editing frozen inputs. Paths: `scripts/check-contract.sh`, `scripts/check-contract.mjs`. Depends: T001. Accept: Compile TypeSpec, validate OpenAPI and generated TS, then git diff --exit-code against all three frozen files; fail on changed paths/statuses/security/headers, unsafe public/contact-removed shapes or zero fixtures. Canonical and generated bytes stay frozen.
+- [X] T005 Owner: Lead/Architect — Promote generation/schema/type drift checks into a shared executable verification entry point without editing frozen inputs. Paths: `scripts/check-contract.sh`, `scripts/check-contract.mjs`. Depends: T001. Accept: Compile TypeSpec, validate OpenAPI and generated TS, then git diff --exit-code against all three frozen files; fail on changed paths/statuses/security/headers, unsafe public/contact-removed shapes or zero fixtures. Canonical and generated bytes stay frozen.
 
-- [ ] T006 Owner: QA/DevOps — Author initial GitHub Actions generation/build/unit jobs independently of feature implementation. Paths: `.github/workflows/ci.yml`. Depends: T004, T005, T002, T003. Accept: Node 22/Python 3.12 locked installs, contract no-diff, frontend type/build and backend Ruff/mypy/unit commands execute; record image and timezone/browser versions. Future suites are explicit, missing tests cannot silently pass; no deployment job, credentials or body-bearing artifacts.
+- [X] T006 Owner: QA/DevOps — Author initial GitHub Actions generation/build/unit jobs independently of feature implementation. Paths: `.github/workflows/ci.yml`. Depends: T004, T005, T002, T003. Accept: Node 22/Python 3.12 locked installs, contract no-diff, frontend type/build and backend Ruff/mypy/unit commands execute; record image and timezone/browser versions. Future suites are explicit, missing tests cannot silently pass; no deployment job, credentials or body-bearing artifacts.
 
 - [ ] T007 [P] Owner: Backend — Build the backend image from its lock and publish migration/seed/worker/health CLI interfaces for QA. Paths: `backend/Dockerfile`, `backend/.dockerignore`. Depends: T002. Accept: Pin every FROM to an exact Python 3.12 patch release plus verified immutable digest; lock Python/tzdata packages, set PYTHONTZPATH="" to select packaged tzdata and TZ=UTC, and report package/IANA versions. Image imports app, runs pytest/static commands and publishes migration/seed/worker/health CLI interfaces; excludes .venv/.env/caches, no migration per API replica. Missing configured tzdata fails validation; do not invent digest values in documentation.
 
-- [ ] T008 [P] Owner: Frontend — Build the frontend image and publish its serving/API-origin interface for QA. Paths: `frontend/Dockerfile`, `frontend/.dockerignore`. Depends: T003. Accept: Pin every FROM to an exact Node 22 patch/base release plus verified immutable digest; locked build succeeds and records image/browser versions. Publish VITE_API_BASE_URL build/start behavior for the QA-assigned loopback API port; exclude secrets/node_modules/private state. QA consumes the image without editing this Dockerfile.
+- [X] T008 [P] Owner: Frontend — Build the frontend image and publish its serving/API-origin interface for QA. Paths: `frontend/Dockerfile`, `frontend/.dockerignore`. Depends: T003. Accept: Pin every FROM to an exact Node 22 patch/base release plus verified immutable digest; locked build succeeds and records image/browser versions. Publish VITE_API_BASE_URL build/start behavior for the QA-assigned loopback API port; exclude secrets/node_modules/private state. QA consumes the image without editing this Dockerfile.
 
 ---
 
@@ -345,8 +367,10 @@ This approved task baseline adds the nine dependency edges for I1/I2; defines QA
 Backend private hooks, isolated component-candidate execution and redacted evidence in the
 [execution protocol](../../docs/EXECUTION_PROTOCOL.md); adds review checkpoints within T055/T073;
 and makes image/tzdata pins and Ruff/mypy commands explicit. No task IDs or coverage rows are
-removed. All 92 tasks were unchecked at refinement. T001 is now complete; the other 91 tasks
-remain unstarted, with their execution authorization and runtime verification outstanding.
+removed. All 92 tasks were unchecked at refinement. T001–T006 and T008 are now complete after
+reviewed integration and post-merge verification; 85 tasks remain unchecked, including T007
+whose existing Backend image work remains uncommitted pending its separate review. Further
+execution authorization and applicable runtime verification remain required.
 
 ## Dependencies and execution order
 
@@ -731,10 +755,11 @@ not a redefinition of MVP scope: all US1–US5 and all 77 scenarios remain relea
 Proceed with US3/US4 prepared fixtures and parallel test authoring while respecting file/service
 edges, then complete US5 real timezone/mobile coverage and the final integration candidate.
 
-Task scope/protocol are committed at the approved input revision. H0 now permits T001 handoff
-finalization/local commit only; its committed-handoff acceptance has passed. Before agents start,
-the Lead must provide the same reviewed committed task+contract baseline to separate worktrees
-and isolated test projects; no worktree, database or agent is created by T001. T-02 runtime
+Task scope/protocol are committed at the approved input revision. T001 handoff acceptance passed;
+subsequent explicit human authorization covered the first isolated T002–T005 tooling batch,
+security maintenance and local integration. That batch is complete after post-merge checks.
+Future agent/task starts still require separate authorization and a common reviewed committed
+baseline with isolated test projects. T001 itself created no worktree, database or agent. T-02 runtime
 proof is unbuilt; T-03 local privacy/recovery proof and selected-host controls are unvalidated.
 Those are explicit evidence gates, not permission to weaken requirements or claim tested behavior.
 There is no unresolved product choice identified by decomposition. If implementation exposes a
@@ -743,9 +768,11 @@ contract/precision/security contradiction, stop affected work and use the approv
 The approved input commit contains tasks.md and docs/EXECUTION_PROTOCOL.md. T001 additionally
 prepares docs/IMPLEMENTATION_BASELINE.md and updates shared coordination status; it changes no
 feature code, frozen contract/specification/checklist, application test or infrastructure.
-Its scoped authorization permits the T001 documentation commit only, with no other task execution,
-agent launch, worktree creation, push, merge, restore or deployment. T001 is complete after
-committed-handoff verification; the other 91 tasks remain unchecked and unstarted.
+Its original scoped authorization permitted the T001 documentation commit only. The later
+explicit approvals and completion evidence for T002–T005 are recorded above and in the linked
+review. The separately authorized T006/T008 integration and branch publication are recorded in
+the second completion record. Seven tasks are complete; 85 remain unchecked, including T007.
+No automatic progression to further tasks, recovery, main integration or deployment is authorized.
 
 ## Task inventory
 
