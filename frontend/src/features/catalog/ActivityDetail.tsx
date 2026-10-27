@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ApiFailure, getActivity, type Activity } from "../../api/client";
+import Availability from "./Availability";
 
 type State = { kind: "loading" | "error" | "unavailable" } | { kind: "ready"; activity: Activity };
 
@@ -30,6 +31,7 @@ export default function ActivityDetail({ slug, onBack }: { slug: string; onBack:
       <p data-testid="activity-description" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{state.activity.description}</p>
       <p>{state.activity.durationMinutes} minutes</p>
       <p>Activity timezone: {state.activity.timezone}</p>
+      <Availability key={state.activity.slug} activity={state.activity} />
     </>}
   </section>;
 }

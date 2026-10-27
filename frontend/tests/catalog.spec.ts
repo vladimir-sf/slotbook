@@ -233,7 +233,9 @@ test.describe("T032 date and slot discovery", () => {
     await expect(page.getByText("Selecting a time does not reserve it.", { exact: true })).toBeVisible();
     expect(api.unexpected).toEqual([]);
     expect(api.calls.every((call) => call.method === "GET")).toBe(true);
-    await expect(page.getByRole("textbox")).toHaveCount(0);
+    // Chromium can expose the native date input as a textbox. Discovery permits
+    // that control, but must not introduce guest-contact or booking-form fields.
+    await expect(page.locator('input:not([type="date"]), textarea')).toHaveCount(0);
   });
 
   test("does not request slots until a date is selected", async ({ page }) => {
