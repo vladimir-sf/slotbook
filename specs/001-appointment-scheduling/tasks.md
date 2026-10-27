@@ -1,10 +1,10 @@
 ---
-description: "Approved SlotBook MVP tasks; T001–T006 and T008 complete, 85 tasks remain unchecked"
+description: "Approved SlotBook MVP tasks; T001–T006, T008, T015 and T018 complete, 83 tasks remain unchecked"
 ---
 
 # Tasks: SlotBook Appointment Scheduling MVP
 
-**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001–T006 and T008 complete after reviewed integration and passing post-merge verification; 85 tasks remain unchecked, including in-progress T007.
+**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001–T006, T008, T015 and T018 complete after reviewed integration and passing post-merge verification; 83 tasks remain unchecked, including in-progress T007.
 **Original baseline approval scope**: The human project owner approved the refined 92-task plan and protocol,
 subject to final file verification, and authorized only their baseline commit. This records task
 approval, not permission to start execution, create worktrees, launch agents, push, merge or deploy.
@@ -36,6 +36,18 @@ the [completion record](../../docs/reviews/ci-frontend-image.md). T007 remains u
 its uncommitted Backend work was neither merged nor modified. Production deployment still
 requires remediation or explicit risk acceptance of the recorded image findings. This
 authorization does not start further tasks, approve main integration, or permit deployment.
+**Backend foundations completion (2026-10-27)**: The human authorized integration of T015
+`57e6a34f67bcee2e72def3cdbd81d46936a13188` and T018
+`3f9ecda776256de2f7790a6b937741382b0bb1ea`, progress recording and a feature-branch push.
+Lead entered at `206192afef2d7e6511340ef716bfd54137fe5dd0`, preserving the approved README
+fix after the expected `e833154` baseline. Non-fast-forward merge:
+`ae222a2fc5e52f8c71c6a20878b600707dc75a08`. Backend's full 237-test suite, all four
+regression lanes and six fresh real PostgreSQL clock checks passed before marking both tasks
+complete; see the [integration record](../../docs/reviews/backend-foundations.md). Locks,
+frozen API, approved requirements and T007's separate uncommitted work are preserved.
+T007 is still unchecked. Its original task acceptance has no zero-image-vulnerability gate;
+known findings remain open production-release requirements, with unresolved critical risks
+blocking deployment. No further task, main merge or deployment is authorized here.
 **Frozen source baseline**: `adc0b83a4408493ac44d3a7571dfd3d25a758679` on actual branch
 `001-appointment-scheduling` (verified clean before generation; one local commit ahead of origin).
 **Inputs**: [constitution](../../.specify/memory/constitution.md), [spec.md](spec.md),
@@ -145,13 +157,13 @@ changing shared ownership; T001 records its reviewed revision before execution.
   Verbatim data-model constraints for `private.admins` — fields: id PK, email UNIQUE, password_hash; rules: "One seeded admin; Argon2; configured development credentials only. Seed rerun preserves existing credentials. Reprovision after restore, not from booking-history backup."
   Verbatim data-model constraints for `private.admin_sessions` — fields: token_digest PK, admin_id FK, issued_at, expires_at; rules: "Opaque bearer verifier, absolute expiry = issued_at + 60 elapsed minutes. No extension/refresh; expired sessions removed by worker. Excluded from backups."
 
-- [ ] T015 [P] Owner: Backend — Implement strict Python request/response/error schemas matching the frozen body unions and preprocessing rules. Paths: `backend/app/schemas/common.py`, `backend/app/schemas/activity.py`, `backend/app/schemas/booking.py`, `backend/app/schemas/auth.py`, `backend/tests/unit/test_schemas.py`. Depends: T002. Accept: Unknown body fields fail; trim description before counting Unicode code points; retain exact attendee identity strings; UUID/aware-time/email/LocalClock constraints and present/removed union match OpenAPI; no raw validator values escape. Covers: FR-007, FR-019, FR-022, FR-031.
+- [X] T015 [P] Owner: Backend — Implement strict Python request/response/error schemas matching the frozen body unions and preprocessing rules. Paths: `backend/app/schemas/common.py`, `backend/app/schemas/activity.py`, `backend/app/schemas/booking.py`, `backend/app/schemas/auth.py`, `backend/tests/unit/test_schemas.py`. Depends: T002. Accept: Unknown body fields fail; trim description before counting Unicode code points; retain exact attendee identity strings; UUID/aware-time/email/LocalClock constraints and present/removed union match OpenAPI; no raw validator values escape. Covers: FR-007, FR-019, FR-022, FR-031.
 
 - [ ] T016 Owner: Backend — Establish app factory, contracted exception translation, no-store and explicit-origin CORS/redaction. Paths: `backend/app/main.py`, `backend/app/api/errors.py`, `backend/app/api/middleware.py`, `backend/tests/contract/test_common_errors.py`, `backend/tests/support/server.py`. Depends: T015, T014. Accept: Malformed JSON/type/extra fields map to safe 400; common 500/503 bodies, no-store/CORS and redaction match v1; no 422/HTML/body/token/contact logging. Backend-owned test-only server factory injects private clock/fault adapters through Python dependencies; ordinary entrypoint never reads test control. Auth-before-parse remains for T054; no test HTTP API. Covers: FR-007, FR-014, FR-019, FR-022.
 
 - [ ] T017 Owner: Backend — Provide explicit repeatable synthetic development seeds and first-start generation initialization. Paths: `backend/app/cli/seed.py`, `backend/tests/integration/test_seed.py`. Depends: T014. Accept: Dedicated development/test mode seeds one Argon2 admin and future activity/windows from runtime configuration; rerun preserves passwords/bookings/generation. Routine missing established generation/HMAC state fails closed, never silently rotates it. Covers: FR-013, FR-024.
 
-- [ ] T018 [P] Owner: Backend — Provide injectable authoritative wall-clock and pinned IANA conversion primitives. Paths: `backend/app/time.py`, `backend/tests/unit/test_time_primitives.py`, `backend/tests/support/clock.py`. Depends: T002. Accept: Production samples DB clock_timestamp() after waits; elapsed UTC boundaries and offset normalization are tested. Python zoneinfo uses locked tzdata via empty PYTHONTZPATH, reports package/IANA versions and rejects missing data. Test adapter reads protected per-run control only when explicitly injected by a test entrypoint; controlled-time cases are labeled separately from real-clock durability/concurrency evidence. Covers: FR-008, FR-021, FR-026, FR-028, FR-030.
+- [X] T018 [P] Owner: Backend — Provide injectable authoritative wall-clock and pinned IANA conversion primitives. Paths: `backend/app/time.py`, `backend/tests/unit/test_time_primitives.py`, `backend/tests/support/clock.py`. Depends: T002. Accept: Production samples DB clock_timestamp() after waits; elapsed UTC boundaries and offset normalization are tested. Python zoneinfo uses locked tzdata via empty PYTHONTZPATH, reports package/IANA versions and rejects missing data. Test adapter reads protected per-run control only when explicitly injected by a test entrypoint; controlled-time cases are labeled separately from real-clock durability/concurrency evidence. Covers: FR-008, FR-021, FR-026, FR-028, FR-030.
 
 - [ ] T019 Owner: Backend — Write failing tests for exact deadline erasure, read suppression, worker failure reporting and cleanup lock order. Paths: `backend/tests/unit/test_retention.py`, `backend/tests/integration/test_worker_cleanup.py`. Depends: T014, T018. Accept: Controlled end/cancel +720h boundary cases and overdue failure cases fail without the worker; attempt expiry preserves tombstones/removes bindings and sessions expire without renewal; tests assert no earlier-order parent lock acquisition. Covers: FR-019, FR-024, FR-025, FR-028, FR-029.
 
@@ -367,9 +379,9 @@ This approved task baseline adds the nine dependency edges for I1/I2; defines QA
 Backend private hooks, isolated component-candidate execution and redacted evidence in the
 [execution protocol](../../docs/EXECUTION_PROTOCOL.md); adds review checkpoints within T055/T073;
 and makes image/tzdata pins and Ruff/mypy commands explicit. No task IDs or coverage rows are
-removed. All 92 tasks were unchecked at refinement. T001–T006 and T008 are now complete after
-reviewed integration and post-merge verification; 85 tasks remain unchecked, including T007
-whose existing Backend image work remains uncommitted pending its separate review. Further
+removed. All 92 tasks were unchecked at refinement. T001–T006, T008, T015 and T018 are now complete
+after reviewed integration and post-merge verification; 83 tasks remain unchecked, including
+T007 whose existing Backend image work remains uncommitted pending its separate review. Further
 execution authorization and applicable runtime verification remain required.
 
 ## Dependencies and execution order
@@ -771,7 +783,9 @@ feature code, frozen contract/specification/checklist, application test or infra
 Its original scoped authorization permitted the T001 documentation commit only. The later
 explicit approvals and completion evidence for T002–T005 are recorded above and in the linked
 review. The separately authorized T006/T008 integration and branch publication are recorded in
-the second completion record. Seven tasks are complete; 85 remain unchecked, including T007.
+the second completion record. T015/T018 integration is documented in the
+[Backend foundations record](../../docs/reviews/backend-foundations.md). Nine tasks are
+complete; 83 remain unchecked, including T007.
 No automatic progression to further tasks, recovery, main integration or deployment is authorized.
 
 ## Task inventory
