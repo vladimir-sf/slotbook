@@ -42,6 +42,8 @@ async function intercept(page: Page, handlers: Partial<Record<Read, Handler>> = 
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
+    // Vite module URLs such as /src/api/client.ts are application code, not API traffic.
+    if (!url.pathname.startsWith("/api/")) return route.fallback();
     const operation: Read | undefined = url.pathname === "/api/activities" ? "Activities_list"
       : /^\/api\/activities\/[^/]+\/slots$/.test(url.pathname) ? "Activities_slots"
       : /^\/api\/activities\/[^/]+$/.test(url.pathname) ? "Activities_detail" : undefined;
@@ -86,7 +88,8 @@ test.describe("T031 catalog and detail", () => {
     await expect(page.getByRole("button", { name: `View ${activity.title}`, exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: `View ${second.title}`, exact: true })).toBeVisible();
     await expect(page.getByText("30 minutes", { exact: true })).toBeVisible();
-    await expect(page.getByText(activity.description, { exact: true })).toBeVisible();
+    const offering = page.getByRole("article").filter({ has: page.getByRole("button", { name: `View ${activity.title}`, exact: true }) });
+    await expect(offering.getByText(activity.description, { exact: true })).toBeVisible();
     expect(api.calls.some((call) => call.operation === "Activities_list")).toBe(true);
   });
 

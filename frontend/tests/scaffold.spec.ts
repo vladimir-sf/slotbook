@@ -149,8 +149,11 @@ test("T003 report directories are private and cannot resolve into the checkout",
   expect(() => privateReportDirectory(link), "T003_SYMLINK_REPORT_REJECTED").toThrow("T003_REPORT_DIRECTORY_OUTSIDE_CHECKOUT_REQUIRED");
 });
 
-test("T003 Chromium renders the existing frontend scaffold", async ({ page }) => {
+test("T003 Chromium renders the public frontend entry point", async ({ page }) => {
+  await page.route("**/api/activities", (route) => route.fulfill({
+    status: 200, headers: { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" }, json: [],
+  }));
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Book time, without the back-and-forth." })).toBeVisible();
-  await expect(page.getByText("Foundation ready · Features not implemented")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose an appointment", exact: true })).toBeVisible();
+  await expect(page.getByText("No appointment types are available.", { exact: true })).toBeVisible();
 });
