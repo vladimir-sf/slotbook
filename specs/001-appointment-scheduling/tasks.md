@@ -48,6 +48,22 @@ frozen API, approved requirements and T007's separate uncommitted work are prese
 T007 is still unchecked. Its original task acceptance has no zero-image-vulnerability gate;
 known findings remain open production-release requirements, with unresolved critical risks
 blocking deployment. No further task, main merge or deployment is authorized here.
+**Parallel discovery amendment approved (2026-10-27)**: The human approved the dependency
+and acceptance proposal reviewed against `3148b980cbe3d1b7fe3f8fd19916494b41e68d6d`,
+and authorized applying, committing and pushing only this task list, `docs/EXECUTION_PROTOCOL.md`
+and `docs/AGENT_PROMPTS.md`. T027 now depends on T003; T026 on T004/T005. T031→T032
+retain their existing order. T022 gains an early preparation checkpoint after T004/T008,
+but keeps every runtime-completion prerequisite. T033 explicitly depends on T024. Scoped
+Frontend path additions permit the scaffold-smoke update in T031 and detail/availability wiring
+in T032. No task ID, completion marker, product requirement, ownership boundary or frozen
+contract changes. Implementation, task starts, agent launch, worktree creation, merges and
+deployment are not authorized by this amendment. All three owners must later use the same
+reviewed amendment-inclusive commit supplied by the Lead; readiness alone is not authorization.
+Amendment document checks (2026-10-27): 92 task IDs, 212 dependency edges, no cycles or missing
+prerequisites; 29 conditional parallel markers, owners and all completion markers preserved.
+All 31 FR / 19 SC / 77 scenario mappings, 18 frozen API operations and the 16/16 checklist
+are intact. Nine tasks remain complete and 83 unchecked. These are static document checks,
+not new application, fixture, infrastructure or live acceptance results.
 **Frozen source baseline**: `adc0b83a4408493ac44d3a7571dfd3d25a758679` on actual branch
 `001-appointment-scheduling` (verified clean before generation; one local commit ahead of origin).
 **Inputs**: [constitution](../../.specify/memory/constitution.md), [spec.md](spec.md),
@@ -69,7 +85,8 @@ test targets; production and ordinary developer databases are never implicit tes
 Each line has checkbox, sequential ID, optional [P], story label only in story phases, owner,
 exact repository-relative output paths, explicit dependencies, measurable acceptance and references.
 `[P]` means file-disjoint work can run concurrently **after all listed dependencies are complete**;
-it never bypasses H0/foundation or means the whole story can run before its services exist.
+it never bypasses H0 or real-runtime acceptance gates. The approved early fixture/authoring
+and T022 preparation checkpoints below do not establish that the whole story works.
 Unmarked tasks may also be scheduled concurrently only after Lead checks paths/owner capacity.
 Real test runs also require separate target projects or an exclusive target run lock; mutating
 suites cannot reset/restart another suite's database. No two concurrent tasks may edit the same file; tasks sharing App.tsx, app/main.py, migration
@@ -129,9 +146,9 @@ changing shared ownership; T001 records its reviewed revision before execution.
 
 ## Phase 2: Foundational — M1: blocking persistence/security infrastructure
 
-**Goal**: Provide PostgreSQL migrations, private-state boundaries, common HTTP behavior, clock/seed/retention/readiness and reproducible Compose before story work.
+**Goal**: Provide PostgreSQL migrations, private-state boundaries, common HTTP behavior, clock/seed/retention/readiness and reproducible Compose before real-backend story integration.
 
-**Independent verification / checkpoint**: Empty/repeat migrations, actual GiST/role/check tests, exact cleanup boundaries and cold/repeat startup pass. The dedicated contact worker exists before guests can create personal data. All stories depend on the foundation gate.
+**Independent verification / checkpoint**: Empty/repeat migrations, actual GiST/role/check tests, exact cleanup boundaries and cold/repeat startup pass. The dedicated contact worker exists before guests can create personal data. Real-backend story integration depends on T024; explicitly designated Frontend fixtures, QA discovery test authoring and T022 static preparation may precede it.
 
 - [ ] T009 Owner: Backend — Create SQLAlchemy session/model base and Alembic environment with PostgreSQL durability checks. Paths: `backend/app/db/session.py`, `backend/app/db/base.py`, `backend/app/models/__init__.py`, `backend/alembic.ini`, `backend/migrations/env.py`, `backend/migrations/versions/0001_schemas.py`. Depends: T002, T007. Accept: Empty PostgreSQL 16 upgrade creates public/private schemas, least-privilege runtime/backup roles, explicit ACLs and btree_gist; no embedded passwords or default backup grants on future tables; fsync/synchronous_commit are on and sessions UTC; READ COMMITTED transaction scopes never share sessions across threads.
 
@@ -172,10 +189,23 @@ changing shared ownership; T001 records its reviewed revision before execution.
 - [ ] T021 Owner: Backend — Implement contracted health/readiness adapters and durability/generation/worker preflight. Paths: `backend/app/api/operations.py`, `backend/app/cli/readiness.py`, `backend/tests/contract/test_operations.py`, `backend/app/main.py`. Depends: T016, T017, T020. Accept: GET /health returns status=ok + no-store; /ready returns status=ready only for DB/schema/durability/generation/worker readiness, otherwise generic contracted 503 with no diagnostics; no new operational HTTP endpoint. Covers: FR-019, FR-022, FR-024.
 
 - [ ] T022 [P] Owner: QA/DevOps — Wire the six approved runtime services and isolated optional QA test profile. Paths: `docker-compose.yml`, `tests/compose.test.yml`, `tests/compose.integration.yml`, `tests/compose.faults.yml`, `tests/harness/runner.py`. Depends: T007, T008, T009, T017, T020, T021, T004. Accept: DB healthy→migrate→explicit dev seed→backend/retention ready→frontend; exact PostgreSQL 16 release/digest, durable UTC DB internal by default. QA integration overlay resolves selected clean Backend/Frontend worktree contexts and removes stale dev mounts; isolated project/network/volume and loopback API/UI ports per run. Test-only fault overlay mounts private control to Backend test entrypoints, not ordinary services. Host runner validates project labels/target approval, drives lifecycle/CLI commands, and has no Docker socket in application/QA containers. /quality and /contracts mounts are read-only; test containers use internal DB/API networking.
+  **Preparation checkpoint** — Start prerequisites: T004, T008, plus explicit task-scope
+  authorization. QA may prepare the existing task paths: static Compose configuration,
+  selected component contexts, T008's build-time browser API-origin wiring, removal of stale
+  development bind mounts, and fail-closed orchestration/target-guard scaffolding. Validate
+  configuration and isolated guard behavior using synthetic private inputs; do not print
+  secret-bearing rendered configuration. Missing Backend commands or runtime inputs stay
+  explicit and blocked; do not implement fake readiness/CLI successes. This checkpoint
+  authorizes no lifecycle, migration, crash, restore or application-runtime execution.
+  **Runtime checkpoint** — Every listed T022 dependency and the full original acceptance
+  criteria remain required. Static validation does not prove startup, migrations, readiness
+  or lifecycle behavior. Record preparation separately; keep T022 unchecked until the real
+  runtime checkpoint passes. T023 still depends on completed T022. These are checkpoints
+  within one existing task, not additional task IDs.
 
 - [ ] T023 Owner: QA/DevOps — Verify cold startup, repeated startup, empty migrations and readiness failure isolation. Paths: `tests/infrastructure/test_startup.py`, `tests/infrastructure/test_readiness.py`. Depends: T022. Accept: Use the host runner with a disposable manifest: cold/repeat startup, empty migrations, idempotent seed, stopped DB/worker and missing generation behave as specified; no stale readiness. Guard tests refuse non-disposable/unapproved targets before mutation. Component hashes/image digests, allocated ports and redacted results are recorded; no developer/production DB is dropped.
 
-- [ ] T024 Owner: Lead/Architect — Review the foundation integration evidence and immutable contract before story execution. Paths: `docs/reviews/foundation.md`. Depends: T006, T011, T012, T013, T014, T016, T017, T018, T020, T021, T022, T023. Accept: Verify only the foundation slice from reviewed component commits using QA contexts/manifest, without branch merges or admin/product endpoints: migrations/constraints/roles, static/unit checks, worker cleanup, health/readiness and cold/repeat startup pass. Record pinned image/tzdata versions and sanitized evidence plus unchanged frozen hashes. No US1–US5 or T-02/T-03 completion claim; Phase 3+ may begin.
+- [ ] T024 Owner: Lead/Architect — Review the foundation integration evidence and immutable contract before real-backend story integration. Paths: `docs/reviews/foundation.md`. Depends: T006, T011, T012, T013, T014, T016, T017, T018, T020, T021, T022, T023. Accept: Verify only the foundation slice from reviewed component commits using QA contexts/manifest, without branch merges or admin/product endpoints: migrations/constraints/roles, static/unit checks, worker cleanup, health/readiness and cold/repeat startup pass. Record pinned image/tzdata versions and sanitized evidence plus unchanged frozen hashes. Early fixture/authoring/static deliverables do not satisfy this mandatory infrastructure checkpoint. No US1–US5 or T-02/T-03 completion claim; real-backend story integration may begin.
 
 ---
 
@@ -187,23 +217,23 @@ changing shared ownership; T001 records its reviewed revision before execution.
 
 - [ ] T025 [P] [US1] Owner: Backend — Write missing-feature tests for catalog eligibility, start grid, windows, blocks, notice and display dates. Paths: `backend/tests/unit/test_availability.py`, `backend/tests/integration/test_catalog.py`. Depends: T024. Accept: Record meaningful red cases before service implementation: active/inactive/empty catalog, stale activity, 09:10 examples, inclusive boundaries, occupancy and visitor-date coverage. Covers: FR-001, FR-002, FR-003, FR-004, FR-005, FR-021, FR-026, FR-030, FR-031; US1.1–8.
 
-- [ ] T026 [P] [US1] Owner: QA/DevOps — Author public catalog/detail/slots contract and failure checks independently from backend code. Paths: `tests/contract/test_catalog.py`. Depends: T024. Accept: All three read operations validate 200/400/404/500/503 where declared, descriptions, displayTimezone/default behavior and contact-free bodies; malformed query and empty-vs-failed responses are distinct. Covers: FR-001, FR-002, FR-003, FR-007, FR-019, FR-022; US1.1–8.
+- [ ] T026 [P] [US1] Owner: QA/DevOps — Author public catalog/detail/slots contract and failure checks independently from backend code. Paths: `tests/contract/test_catalog.py`. Depends: T004, T005. Accept: Author and collect reviewed assertions for all three read operations: 200/400/404/500/503 only where declared, required headers/no-store, descriptions, displayTimezone/default behavior and contact-free bodies; malformed query and empty-vs-failed responses are distinct. Validate test oracles with frozen schemas and meaningful controlled violations; environment/setup failures are not behavioral evidence. Authoring may complete with documented expected-red assertions, while real-backend verification stays pending. Distinguish fixture self-checks from an explicitly guarded live client; the existing MockTransport http_client cannot provide live API evidence, and missing live infrastructure fails closed without mock fallback. T030 must pass this suite against its real Backend; T033 reruns it against the combined candidate. Required merge checks still must pass. Covers: FR-001, FR-002, FR-003, FR-007, FR-019, FR-022; US1.1–8.
 
-- [ ] T027 [P] [US1] Owner: Frontend — Write browser/component tests against typed frozen API fixtures before the discovery UI. Paths: `frontend/tests/catalog.spec.ts`. Depends: T024. Accept: Fixture-driven tests initially fail for missing catalog/detail/date/slots views; assert empty, unavailable, loading and error states, full literal multiline text and no implied reservation. Covers: FR-001, FR-002, FR-003, FR-020, FR-022, FR-031; US1.1–6.
+- [ ] T027 [P] [US1] Owner: Frontend — Write browser/component tests against typed frozen API fixtures before the discovery UI. Paths: `frontend/tests/catalog.spec.ts`. Depends: T003. Accept: Use T003 fixtures and the frozen generated TypeScript definitions read-only; author, typecheck and collect catalog/detail/date/slots cases using test-only API interception without a feature Backend. Record meaningful expected-red assertions for missing UI, not setup failures; cover empty, unavailable, loading and error states, full literal multiline text and no implied reservation. Authoring completion is not working discovery or real API verification; T031/T032 supply fixture-green behavior, and T033/T034 retain real integration acceptance. Covers: FR-001, FR-002, FR-003, FR-020, FR-022, FR-031; US1.1–6.
 
 - [ ] T028 [US1] Owner: Backend — Implement timezone-aware real-window portions and exact activity-local quarter-hour candidate enumeration. Paths: `backend/app/services/time_windows.py`. Depends: T025. Accept: Use both folds and UTC round trips; no nonexistent starts or shifted boundaries; full elapsed [start,end) fits one continuous portion of one unchanged window, end may equal boundary. 09:10–10:00/30m gives only 09:15,09:30; 09:10–09:40 gives none. Covers: FR-004, FR-021, FR-027, FR-030; US1.7–8.
 
 - [ ] T029 [US1] Owner: Backend — Query active catalog and evaluate sorted availability across all activity dates intersecting a display date. Paths: `backend/app/services/catalog.py`, `backend/app/services/availability.py`. Depends: T028. Accept: At fresh N apply N+1h <= start <= N+1440h, activity-local blocks, current occupancy and grid; deduplicate by UTC, never assume a 24h date or exactly two activity dates; no contact/booking ID projection. Covers: FR-001, FR-003, FR-005, FR-008, FR-019, FR-021, FR-026; US1.1–8.
 
-- [ ] T030 [US1] Owner: Backend — Expose the three frozen public read operations and their exact error/header shapes. Paths: `backend/app/api/activities.py`, `backend/app/main.py`. Depends: T029, T016, T026. Accept: GET list/detail/slots pass backend and QA schema checks; missing/inactive is 404, invalid date/zone 400, empty 200 [] distinct from service failure; preserve UTC Z and full description. Covers: FR-001, FR-002, FR-003, FR-007, FR-019, FR-022; US1.1–8.
+- [ ] T030 [US1] Owner: Backend — Expose the three frozen public read operations and their exact error/header shapes. Paths: `backend/app/api/activities.py`, `backend/app/main.py`. Depends: T029, T016, T026. Accept: GET list/detail/slots pass backend and QA schema checks, including the T026 suite against the actual Backend before this task completes; missing/inactive is 404, invalid date/zone 400, empty 200 [] distinct from service failure; preserve UTC Z and full description. Covers: FR-001, FR-002, FR-003, FR-007, FR-019, FR-022; US1.1–8.
 
-- [ ] T031 [US1] Owner: Frontend — Implement typed fetch foundation and public catalog/activity selection. Paths: `frontend/src/api/client.ts`, `frontend/src/features/catalog/Catalog.tsx`, `frontend/src/features/catalog/ActivityDetail.tsx`, `frontend/src/App.tsx`. Depends: T027. Accept: Use generated operation/body types, full literal descriptions and current activity context; no independent DTOs or raw-error values. Loading/empty/not-found/failure feedback passes fixture tests. Covers: FR-001, FR-002, FR-003, FR-022, FR-031; US1.1–6.
+- [ ] T031 [US1] Owner: Frontend — Implement typed fetch foundation and public catalog/activity selection. Paths: `frontend/src/api/client.ts`, `frontend/src/features/catalog/Catalog.tsx`, `frontend/src/features/catalog/ActivityDetail.tsx`, `frontend/src/App.tsx`, `frontend/tests/scaffold.spec.ts`. Depends: T027. Accept: Use generated operation/body types, full literal descriptions and current activity context; no independent DTOs or raw-error values. Loading/empty/not-found/failure feedback passes the catalog/detail fixture cases using the production typed client with test-only network interception; no production mock mode. Replace only the obsolete scaffold-render assertion as needed, preserving the remaining T003 contract/privacy/report checks. Record any expected-red date/slot cases still awaiting T032, without claiming a green full suite or real API verification; required merge checks are not bypassed. Covers: FR-001, FR-002, FR-003, FR-022, FR-031; US1.1–6.
 
-- [ ] T032 [US1] Owner: Frontend — Implement date/slot selection consuming the server list without computing its own availability rules. Paths: `frontend/src/features/catalog/Availability.tsx`. Depends: T031. Accept: Date and active context persist, returned UTC slot identity is preserved, empty/failure distinguishable and another date/activity selectable; discovery fixture tests pass without a running feature backend. Covers: FR-003, FR-004, FR-005, FR-021, FR-022; US1.2–5 US1.7–8.
+- [ ] T032 [US1] Owner: Frontend — Implement date/slot selection consuming the server list without computing its own availability rules. Paths: `frontend/src/features/catalog/Availability.tsx`, `frontend/src/features/catalog/ActivityDetail.tsx`. Depends: T031. Accept: Date and active context persist, returned UTC slot identity is preserved, empty/failure distinguishable and another date/activity selectable; wire availability into the activity detail after T031; the full discovery fixture suite and existing Frontend regressions pass without a running feature Backend. Test-only interception must not become a production mock API. These results prove fixture/UI behavior only; T033/T034 still require the real Backend and approved availability outcomes. Covers: FR-003, FR-004, FR-005, FR-021, FR-022; US1.2–5 US1.7–8.
 
-- [ ] T033 [US1] Owner: QA/DevOps — Run the discovery story against prepared real synthetic schedules. Paths: `tests/e2e/catalog.spec.ts`. Depends: T026, T030, T032. Accept: US1.1–8 each assert real UI and API outcomes, including exactly two/no off-grid-opening slots; no admin journey needed because setup uses the isolated seed/DB fixture interface. Covers: FR-001, FR-002, FR-003, FR-004, FR-005, FR-031; US1.1–8.
+- [ ] T033 [US1] Owner: QA/DevOps — Run the discovery story against prepared real synthetic schedules. Paths: `tests/e2e/catalog.spec.ts`. Depends: T024, T026, T030, T032. Accept: After verified T024, rerun T026 against the selected real Backend and assert all US1.1–8 real UI/API outcomes, including exactly two/no off-grid-opening slots. Use one immutable component manifest with no fixture transport, intercepted feature responses or mock fallback in this live evidence; no admin journey needed because setup uses the isolated seed/DB fixture interface. Covers: FR-001, FR-002, FR-003, FR-004, FR-005, FR-031; US1.1–8.
 
-- [ ] T034 [US1] Owner: Lead/Architect — Record the independently verifiable discovery checkpoint. Paths: `docs/reviews/us1-discovery.md`. Depends: T033. Accept: Using the foundation plus only discovery component commits and prepared synthetic schedules, backend availability/catalog, frontend fixtures and QA US1.1–8 pass; record candidate refs/ports and evidence via the host runner. No admin/booking/restore dependencies or branch merge; frozen API remains unchanged. First demonstrable product slice, not the whole MVP. Covers: FR-001, FR-002, FR-003, FR-004, FR-005, FR-031; US1.1–8.
+- [ ] T034 [US1] Owner: Lead/Architect — Record the independently verifiable discovery checkpoint. Paths: `docs/reviews/us1-discovery.md`. Depends: T033. Accept: Using the foundation plus only discovery component commits and prepared synthetic schedules, verified T024 infrastructure, real Backend availability/catalog and T026 results, Frontend fixtures and real QA US1.1–8 all pass; record candidate refs/ports and evidence via the host runner. No admin/booking/restore dependencies or branch merge; frozen API remains unchanged. First demonstrable product slice, not the whole MVP. Covers: FR-001, FR-002, FR-003, FR-004, FR-005, FR-031; US1.1–8.
 
 ---
 
@@ -387,17 +417,24 @@ execution authorization and applicable runtime verification remain required.
 ## Dependencies and execution order
 
 H0 → initial Lead handoff → file-disjoint setup lanes → PostgreSQL/security/retention/Compose
-foundation → foundation evidence gate. Every story task depends transitively on that gate.
-**Table order is not permission to ignore dependencies.** Early red-test authoring for US2/US3/
+foundation → foundation evidence gate. Backend story implementation and real API/E2E story
+acceptance still depend transitively on T024. The explicit exceptions are T026 authoring,
+T027→T031→T032 fixture/UI development, and T022 preparation after its separate start prerequisites.
+**Table order is not permission to ignore dependencies or confuse preparation with runtime acceptance.** Early red-test authoring for US2/US3/
 US4 can overlap after foundation; their executable integrations wait for the service/UI dependencies
 listed on each line. Milestone gate tasks are evidence checkpoints, not automatic merge approvals.
 
 ```mermaid
 flowchart TD
     H0[Human task-scope approval] --> S[Setup and common interfaces]
+    S --> M[Frontend fixture development: T027 to T031 to T032]
+    S --> Q[QA T026 authoring and T022 static preparation]
     S --> F[PostgreSQL/private state/retention/Compose foundation]
+    Q --> F
     F --> G[Foundation gate]
-    G --> A[US1 discovery]
+    G --> A[US1 real API and UI integration]
+    M --> A
+    Q --> A
     G --> AT[US2-US4 test authoring]
     A --> B[US2 booking core]
     G --> C[US3 auth and configuration]
@@ -438,11 +475,18 @@ later pass against real implementations. Backend alone owns private clock/fault 
 
 | Story | File-disjoint simultaneous work | Runtime integration waits for |
 | --- | --- | --- |
-| US1 | T025, T026, T027 | T030, T032 |
+| US1 | Before T024: T026; T027→T031→T032; T022 preparation. After T024: Backend T025→T028→T029→T030 | Verified T024, real T026/T030, T032; T033→T034 |
 | US2 | T042, T043, T044 | T041 |
 | US3 | T051, T052, T053 | T056, T061, T057 |
 | US4 | T064, T065, T066 | T069, T070, T073 |
 | US5 | T078, T079, T080 | T082, T083 |
+
+T026 and T027 may complete as test-authoring deliverables with reviewed expected-red evidence.
+T031 requires its catalog/detail fixture slice green; T032 requires the full discovery fixture
+suite and existing Frontend regressions green. Label authoring, fixture, static and live evidence
+separately. Do not hide expected-red assertions with skips/xfails or accept mock fallback as
+real API verification. Missing/skipped mandatory live evidence still blocks its runtime gate;
+required merge checks must pass. T022 preparation never sets its completion checkbox.
 
 At setup, T002, T003, T004 run in different owners/files; after their own locks, T007, T008 publish component images while QA authors T006. Later QA contract/test/CI authoring stays in tests/** and .github/**; frontend/backend owners keep their source/Dockerfiles.
 
@@ -809,4 +853,4 @@ No automatic progression to further tasks, recovery, main integration or deploym
 | Frontend | 19 |
 | QA/DevOps | 18 |
 
-29 tasks retain conditional [P] markers after dependency/ownership reassessment. The nine added edges gate completion on actual QA/evidence producers; shared-file writers, including the new harness and protocol paths, remain ordered. All 92 tasks include exact output paths, owner, dependencies and measurable acceptance; T055/T073 each have four internal review checkpoints, not extra tasks. All 77 scenarios, 31 FRs, 19 SCs, 18 operations, 12 entity constraint rows and RP-01–17 retain explicit coverage. Validation results must be reported from the current document checks, not inferred from this inventory.
+29 tasks retain conditional [P] markers after dependency/ownership reassessment. I1/I2's nine prerequisite edges remain intact; the parallel-discovery amendment removes two edges and adds four, with the runtime gates preserved. Shared-file writers remain ordered. All 92 tasks include exact output paths, owner, dependencies and measurable acceptance; T022, T055 and T073 use internal checkpoints, not extra tasks. All 77 scenarios, 31 FRs, 19 SCs, 18 operations, 12 entity constraint rows and RP-01–17 retain explicit coverage. Validation results must be reported from the current document checks, not inferred from this inventory.
