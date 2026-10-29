@@ -1,10 +1,10 @@
 ---
-description: "Approved SlotBook MVP tasks; T001–T006, T008, T015 and T018 complete, 83 tasks remain unchecked"
+description: "Approved SlotBook MVP tasks; 13 tasks integrated and complete, 79 tasks remain unchecked"
 ---
 
 # Tasks: SlotBook Appointment Scheduling MVP
 
-**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001–T006, T008, T015 and T018 complete after reviewed integration and passing post-merge verification; 83 tasks remain unchecked, including in-progress T007.
+**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001–T006, T008, T015, T018, T026, T027, T031 and T032 complete after reviewed integration and passing post-merge verification; 79 tasks remain unchecked. Backend T007/T009 acceptance and T010 authoring are verified on their separate development branch, pending separate integration.
 **Original baseline approval scope**: The human project owner approved the refined 92-task plan and protocol,
 subject to final file verification, and authorized only their baseline commit. This records task
 approval, not permission to start execution, create worktrees, launch agents, push, merge or deploy.
@@ -64,6 +64,20 @@ prerequisites; 29 conditional parallel markers, owners and all completion marker
 All 31 FR / 19 SC / 77 scenario mappings, 18 frozen API operations and the 16/16 checklist
 are intact. Nine tasks remain complete and 83 unchecked. These are static document checks,
 not new application, fixture, infrastructure or live acceptance results.
+**Discovery development integration (2026-10-29)**: The human authorized Frontend T027/T031/T032
+and QA T026 integration, progress recording and publication of `001-appointment-scheduling`
+from `230955156b50d8e6834aaafebeb966b082b00980`. Verified non-fast-forward merge:
+`2cd655418e928da2fdbc58398c4d0e82df5c11f9`. All four green regression lanes passed;
+Frontend has 85 passing fixture/UI tests, QA has 237 passing T026 authoring cases plus 80
+existing Python regressions, and Lead's Backend suite remains 237 passing cases. T026's
+35 live cases are separately collected but unverified; earlier missing-runtime setup errors
+are not behavioral passes. T024, T030 live conformance, T033 and T034 remain open.
+See the [integration and Backend handoff](../../docs/reviews/discovery-development.md) for
+source commits, sanitized evidence, Backend T007/T009 green-ancestor readiness and the
+separate T011 authorization on T010's original branch. No Backend task commit is merged or
+marked complete centrally here; T010's 63 expected assertion failures remain visible on that
+branch. Only T026/T027/T031/T032 completion markers change. No main merge, deployment,
+frozen API change or production security clearance is authorized.
 **Frozen source baseline**: `adc0b83a4408493ac44d3a7571dfd3d25a758679` on actual branch
 `001-appointment-scheduling` (verified clean before generation; one local commit ahead of origin).
 **Inputs**: [constitution](../../.specify/memory/constitution.md), [spec.md](spec.md),
@@ -217,9 +231,9 @@ changing shared ownership; T001 records its reviewed revision before execution.
 
 - [ ] T025 [P] [US1] Owner: Backend — Write missing-feature tests for catalog eligibility, start grid, windows, blocks, notice and display dates. Paths: `backend/tests/unit/test_availability.py`, `backend/tests/integration/test_catalog.py`. Depends: T024. Accept: Record meaningful red cases before service implementation: active/inactive/empty catalog, stale activity, 09:10 examples, inclusive boundaries, occupancy and visitor-date coverage. Covers: FR-001, FR-002, FR-003, FR-004, FR-005, FR-021, FR-026, FR-030, FR-031; US1.1–8.
 
-- [ ] T026 [P] [US1] Owner: QA/DevOps — Author public catalog/detail/slots contract and failure checks independently from backend code. Paths: `tests/contract/test_catalog.py`. Depends: T004, T005. Accept: Author and collect reviewed assertions for all three read operations: 200/400/404/500/503 only where declared, required headers/no-store, descriptions, displayTimezone/default behavior and contact-free bodies; malformed query and empty-vs-failed responses are distinct. Validate test oracles with frozen schemas and meaningful controlled violations; environment/setup failures are not behavioral evidence. Authoring may complete with documented expected-red assertions, while real-backend verification stays pending. Distinguish fixture self-checks from an explicitly guarded live client; the existing MockTransport http_client cannot provide live API evidence, and missing live infrastructure fails closed without mock fallback. T030 must pass this suite against its real Backend; T033 reruns it against the combined candidate. Required merge checks still must pass. Covers: FR-001, FR-002, FR-003, FR-007, FR-019, FR-022; US1.1–8.
+- [X] T026 [P] [US1] Owner: QA/DevOps — Author public catalog/detail/slots contract and failure checks independently from backend code. Paths: `tests/contract/test_catalog.py`. Depends: T004, T005. Accept: Author and collect reviewed assertions for all three read operations: 200/400/404/500/503 only where declared, required headers/no-store, descriptions, displayTimezone/default behavior and contact-free bodies; malformed query and empty-vs-failed responses are distinct. Validate test oracles with frozen schemas and meaningful controlled violations; environment/setup failures are not behavioral evidence. Authoring may complete with documented expected-red assertions, while real-backend verification stays pending. Distinguish fixture self-checks from an explicitly guarded live client; the existing MockTransport http_client cannot provide live API evidence, and missing live infrastructure fails closed without mock fallback. T030 must pass this suite against its real Backend; T033 reruns it against the combined candidate. Required merge checks still must pass. Covers: FR-001, FR-002, FR-003, FR-007, FR-019, FR-022; US1.1–8.
 
-- [ ] T027 [P] [US1] Owner: Frontend — Write browser/component tests against typed frozen API fixtures before the discovery UI. Paths: `frontend/tests/catalog.spec.ts`. Depends: T003. Accept: Use T003 fixtures and the frozen generated TypeScript definitions read-only; author, typecheck and collect catalog/detail/date/slots cases using test-only API interception without a feature Backend. Record meaningful expected-red assertions for missing UI, not setup failures; cover empty, unavailable, loading and error states, full literal multiline text and no implied reservation. Authoring completion is not working discovery or real API verification; T031/T032 supply fixture-green behavior, and T033/T034 retain real integration acceptance. Covers: FR-001, FR-002, FR-003, FR-020, FR-022, FR-031; US1.1–6.
+- [X] T027 [P] [US1] Owner: Frontend — Write browser/component tests against typed frozen API fixtures before the discovery UI. Paths: `frontend/tests/catalog.spec.ts`. Depends: T003. Accept: Use T003 fixtures and the frozen generated TypeScript definitions read-only; author, typecheck and collect catalog/detail/date/slots cases using test-only API interception without a feature Backend. Record meaningful expected-red assertions for missing UI, not setup failures; cover empty, unavailable, loading and error states, full literal multiline text and no implied reservation. Authoring completion is not working discovery or real API verification; T031/T032 supply fixture-green behavior, and T033/T034 retain real integration acceptance. Covers: FR-001, FR-002, FR-003, FR-020, FR-022, FR-031; US1.1–6.
 
 - [ ] T028 [US1] Owner: Backend — Implement timezone-aware real-window portions and exact activity-local quarter-hour candidate enumeration. Paths: `backend/app/services/time_windows.py`. Depends: T025. Accept: Use both folds and UTC round trips; no nonexistent starts or shifted boundaries; full elapsed [start,end) fits one continuous portion of one unchanged window, end may equal boundary. 09:10–10:00/30m gives only 09:15,09:30; 09:10–09:40 gives none. Covers: FR-004, FR-021, FR-027, FR-030; US1.7–8.
 
@@ -227,9 +241,9 @@ changing shared ownership; T001 records its reviewed revision before execution.
 
 - [ ] T030 [US1] Owner: Backend — Expose the three frozen public read operations and their exact error/header shapes. Paths: `backend/app/api/activities.py`, `backend/app/main.py`. Depends: T029, T016, T026. Accept: GET list/detail/slots pass backend and QA schema checks, including the T026 suite against the actual Backend before this task completes; missing/inactive is 404, invalid date/zone 400, empty 200 [] distinct from service failure; preserve UTC Z and full description. Covers: FR-001, FR-002, FR-003, FR-007, FR-019, FR-022; US1.1–8.
 
-- [ ] T031 [US1] Owner: Frontend — Implement typed fetch foundation and public catalog/activity selection. Paths: `frontend/src/api/client.ts`, `frontend/src/features/catalog/Catalog.tsx`, `frontend/src/features/catalog/ActivityDetail.tsx`, `frontend/src/App.tsx`, `frontend/tests/scaffold.spec.ts`. Depends: T027. Accept: Use generated operation/body types, full literal descriptions and current activity context; no independent DTOs or raw-error values. Loading/empty/not-found/failure feedback passes the catalog/detail fixture cases using the production typed client with test-only network interception; no production mock mode. Replace only the obsolete scaffold-render assertion as needed, preserving the remaining T003 contract/privacy/report checks. Record any expected-red date/slot cases still awaiting T032, without claiming a green full suite or real API verification; required merge checks are not bypassed. Covers: FR-001, FR-002, FR-003, FR-022, FR-031; US1.1–6.
+- [X] T031 [US1] Owner: Frontend — Implement typed fetch foundation and public catalog/activity selection. Paths: `frontend/src/api/client.ts`, `frontend/src/features/catalog/Catalog.tsx`, `frontend/src/features/catalog/ActivityDetail.tsx`, `frontend/src/App.tsx`, `frontend/tests/scaffold.spec.ts`. Depends: T027. Accept: Use generated operation/body types, full literal descriptions and current activity context; no independent DTOs or raw-error values. Loading/empty/not-found/failure feedback passes the catalog/detail fixture cases using the production typed client with test-only network interception; no production mock mode. Replace only the obsolete scaffold-render assertion as needed, preserving the remaining T003 contract/privacy/report checks. Record any expected-red date/slot cases still awaiting T032, without claiming a green full suite or real API verification; required merge checks are not bypassed. Covers: FR-001, FR-002, FR-003, FR-022, FR-031; US1.1–6.
 
-- [ ] T032 [US1] Owner: Frontend — Implement date/slot selection consuming the server list without computing its own availability rules. Paths: `frontend/src/features/catalog/Availability.tsx`, `frontend/src/features/catalog/ActivityDetail.tsx`. Depends: T031. Accept: Date and active context persist, returned UTC slot identity is preserved, empty/failure distinguishable and another date/activity selectable; wire availability into the activity detail after T031; the full discovery fixture suite and existing Frontend regressions pass without a running feature Backend. Test-only interception must not become a production mock API. These results prove fixture/UI behavior only; T033/T034 still require the real Backend and approved availability outcomes. Covers: FR-003, FR-004, FR-005, FR-021, FR-022; US1.2–5 US1.7–8.
+- [X] T032 [US1] Owner: Frontend — Implement date/slot selection consuming the server list without computing its own availability rules. Paths: `frontend/src/features/catalog/Availability.tsx`, `frontend/src/features/catalog/ActivityDetail.tsx`. Depends: T031. Accept: Date and active context persist, returned UTC slot identity is preserved, empty/failure distinguishable and another date/activity selectable; wire availability into the activity detail after T031; the full discovery fixture suite and existing Frontend regressions pass without a running feature Backend. Test-only interception must not become a production mock API. These results prove fixture/UI behavior only; T033/T034 still require the real Backend and approved availability outcomes. Covers: FR-003, FR-004, FR-005, FR-021, FR-022; US1.2–5 US1.7–8.
 
 - [ ] T033 [US1] Owner: QA/DevOps — Run the discovery story against prepared real synthetic schedules. Paths: `tests/e2e/catalog.spec.ts`. Depends: T024, T026, T030, T032. Accept: After verified T024, rerun T026 against the selected real Backend and assert all US1.1–8 real UI/API outcomes, including exactly two/no off-grid-opening slots. Use one immutable component manifest with no fixture transport, intercepted feature responses or mock fallback in this live evidence; no admin journey needed because setup uses the isolated seed/DB fixture interface. Covers: FR-001, FR-002, FR-003, FR-004, FR-005, FR-031; US1.1–8.
 
@@ -409,10 +423,10 @@ This approved task baseline adds the nine dependency edges for I1/I2; defines QA
 Backend private hooks, isolated component-candidate execution and redacted evidence in the
 [execution protocol](../../docs/EXECUTION_PROTOCOL.md); adds review checkpoints within T055/T073;
 and makes image/tzdata pins and Ruff/mypy commands explicit. No task IDs or coverage rows are
-removed. All 92 tasks were unchecked at refinement. T001–T006, T008, T015 and T018 are now complete
-after reviewed integration and post-merge verification; 83 tasks remain unchecked, including
-T007 whose existing Backend image work remains uncommitted pending its separate review. Further
-execution authorization and applicable runtime verification remain required.
+removed. All 92 tasks were unchecked at refinement. Thirteen tasks are now integrated and complete
+after reviewed post-merge verification; 79 remain unchecked. T007/T009 and T010 authoring have
+separate Backend source evidence, not central integration completion. Applicable runtime
+verification and scoped execution/merge authorization remain required.
 
 ## Dependencies and execution order
 
@@ -828,8 +842,10 @@ Its original scoped authorization permitted the T001 documentation commit only. 
 explicit approvals and completion evidence for T002–T005 are recorded above and in the linked
 review. The separately authorized T006/T008 integration and branch publication are recorded in
 the second completion record. T015/T018 integration is documented in the
-[Backend foundations record](../../docs/reviews/backend-foundations.md). Nine tasks are
-complete; 83 remain unchecked, including T007.
+[Backend foundations record](../../docs/reviews/backend-foundations.md). The later
+[discovery development record](../../docs/reviews/discovery-development.md) completes four more
+tasks and records Backend source readiness/T011 authorization. Thirteen tasks are complete;
+79 remain unchecked, including the separate Backend tasks awaiting integration.
 No automatic progression to further tasks, recovery, main integration or deployment is authorized.
 
 ## Task inventory
