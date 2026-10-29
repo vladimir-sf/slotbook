@@ -1,17 +1,17 @@
 # SlotBook implementation coordination protocol
 
-Prepared: 2026-10-25. Status: approved task-coordination baseline at
-`04bb7ed4e7a83244cb8d84de2a6cd8901b8b2419`; T001 is complete after verified local publication.
-The human explicitly restricted this execution to T001: no other tasks, worktree creation,
-agent launch, push, merge, deploy or recovery. H0 is satisfied for that scope only;
-it does not authorize automatic progression to T002–T092 or the bundled full workflow.
+Prepared: 2026-10-25. Revised: 2026-10-27. The original approved coordination baseline is
+`04bb7ed4e7a83244cb8d84de2a6cd8901b8b2419`. The initial T001-only authorization and
+[T001 handoff](IMPLEMENTATION_BASELINE.md) remain historical provenance; later separately
+approved batch completion is recorded in the [task list](../specs/001-appointment-scheduling/tasks.md)
+and its linked integration records. Nine tasks are complete; 83 remain unchecked.
 
-The [T001 handoff](IMPLEMENTATION_BASELINE.md) records input hashes, component interfaces,
-isolation/manifest definitions and publication status. The reviewed handoff was committed and
-verified before T001 was marked complete; its completion metadata is finalized in the new local
-baseline. T002–T005 are dependency-ready but not authorized to execute. No owner start, harness,
-image or runtime evidence is claimed.
-This protocol retains the approved I3/I4/I6 rules and all task/contract constraints below.
+On 2026-10-27 the human approved the parallel-discovery proposal reviewed against
+`3148b980cbe3d1b7fe3f8fd19916494b41e68d6d`, authorizing the three-document amendment,
+commit and feature-branch push only. The preparation/fixture checkpoints below are approved
+plan rules, not permission to start tasks, launch agents, create worktrees or merge/deploy.
+H0 and separately supplied task scopes remain required. This revision retains the I3/I4/I6
+ownership, isolation and evidence rules and all original runtime safety requirements.
 
 The frozen API v1 source baseline is `adc0b83a4408493ac44d3a7571dfd3d25a758679`.
 The [constitution](../.specify/memory/constitution.md), approved specification/amendments,
@@ -33,14 +33,62 @@ QA requests a missing Backend hook from Backend; it does not add a control endpo
 Backend files. Backend requests Compose changes from QA. The Lead resolves coordination and
 contract mismatches before affected work continues. No public endpoint or request field is added.
 
+## Early discovery work and acceptance checkpoints
+
+The approved technical plan permits Frontend fixtures and independent QA development while
+Backend foundations are built. Keep all 92 task IDs and the existing owner boundaries. After
+separate execution authorization, owners may work independently using one reviewed committed
+amendment-inclusive baseline, supplied by the Lead as a full hash after it exists.
+
+| Work / checkpoint | Prerequisites | Evidence and completion boundary |
+| --- | --- | --- |
+| T027 Frontend test authoring | T003 | Use frozen generated types and T003 fixtures; collect/typecheck and record meaningful expected-red missing-UI assertions. This is authoring, not functioning discovery or live API proof. |
+| T031 catalog/detail UI | T027 | Use the production typed client with test-only network interception; catalog/detail fixture cases pass. Record remaining date/slot failures awaiting T032 honestly. |
+| T032 date/slot UI | T031 | Full discovery fixture suite and existing Frontend regressions pass; consume returned UTC slots without calculating availability. Real integration remains pending. |
+| T026 QA discovery test authoring | T004, T005 | Review/collect frozen-operation/status/header/privacy assertions and validate test oracles. Authoring may complete with documented expected-red evidence; live API verification stays pending. |
+| T022 static preparation | T004, T008 | Prepare only its existing Compose/overlay/runner paths and guard/configuration checks. Keep the T022 checkbox unchecked. No runtime/lifecycle acceptance is established. |
+| T022 runtime completion | T007, T008, T009, T017, T020, T021, T004 | All original runtime acceptance and target guards must pass before marking T022 complete. |
+| T033 real discovery | T024, T026, T030, T032 | Verified infrastructure plus real T026 API assertions and all US1.1–8 UI/API outcomes against one immutable selected candidate, without intercepted feature responses or fixture transport. |
+| T034 discovery review | T033 | Review actual T024 infrastructure and live discovery evidence; fixtures cannot replace runtime results. |
+
+T024 retains every dependency and its mandatory infrastructure acceptance. Backend story
+implementation still follows that gate, and T030 retains T029/T016/T026 as prerequisites.
+Before T030 completes it must pass the authored T026 suite against its actual Backend;
+T033 reruns that suite against the combined candidate. T026 completion means its authoring
+acceptance is met, not that the Backend passed. This avoids making T026 authoring depend on
+the Backend implementation it is meant to test.
+
+QA's current `http_client` fixture uses `MockTransport`. It cannot supply live evidence.
+T026 must distinguish fixture self-checks from an explicitly guarded live client: missing
+runtime infrastructure/authorization fails closed, with no fixture fallback. Missing/skipped
+mandatory live cases remain blockers. Do not disguise expected-red assertions with skips/xfails;
+required merge checks still must pass. Report authoring, fixture, static and live results
+separately, with actual commands/counts/exits and the correct source revision.
+
+T022 preparation may wire selected component contexts, T008's build-time browser API origin,
+removal of stale development mounts and fail-closed orchestration scaffolding. Configuration
+checks use synthetic private inputs without publishing rendered secrets. Missing Backend CLIs
+and runtime inputs stay explicit and blocked; no fake readiness/CLI success, lifecycle,
+migration, crash or restore execution is permitted by the preparation checkpoint. T023 still
+requires completed T022. Fault/restore operations retain their separately approved target scope.
+
+Frontend T031 may change only the obsolete scaffold-render assertion in
+`frontend/tests/scaffold.spec.ts`, preserving T003 contract/privacy/report checks. T032 may
+also wire `frontend/src/features/catalog/ActivityDetail.tsx` after T031. Those paths stay
+Frontend-owned and sequential; no generated API file changes or production mock API is allowed.
+QA owns both T026 and T022; sequence its work if needed, without concurrent shared-file writers.
+Backend can finalize T007 and then T009 after their own dependencies and authorization.
+No zero-image-vulnerability condition is added to T007; known risks and production-release
+restrictions recorded in the Backend foundations review remain intact.
+
 ## Common baseline and component candidates
 
-The steps below apply only to separately authorized work. T001-only preparation does not
-create component checkouts. The approved input commit remains fixed; the revised T001 output
-must be published as a reviewed descendant before any component owner starts. Use this handoff,
-not the stale legacy AGENT_PROMPTS.md instructions about JWTs or Frontend contract generation.
-That file requires correction and review before an implementation agent may use it; it is
-not automatically approved by publication of T001.
+The steps below apply only to separately authorized work. Historical T001 preparation did not
+create component checkouts or authorize later tasks. Use the current reviewed task list,
+this protocol and [AGENT_PROMPTS.md](AGENT_PROMPTS.md); the legacy JWT and Frontend-owned
+contract-generation directions were corrected in the reviewed prompt baseline. The Lead supplies
+one full committed revision containing the approved task/protocol/prompt amendment before
+any newly authorized owner starts. Never use a dirty or older checkout as that shared baseline.
 
 1. After H0, the Lead publishes a reviewed, committed common baseline containing the task list
    and protocol, descended from the frozen commit. All implementation checkouts start from that
