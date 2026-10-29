@@ -1,10 +1,10 @@
 ---
-description: "Approved SlotBook MVP tasks; 13 tasks integrated and complete, 79 tasks remain unchecked"
+description: "Approved SlotBook MVP tasks; 15 tasks integrated and complete, 77 tasks remain unchecked"
 ---
 
 # Tasks: SlotBook Appointment Scheduling MVP
 
-**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001–T006, T008, T015, T018, T026, T027, T031 and T032 complete after reviewed integration and passing post-merge verification; 79 tasks remain unchecked. Backend T007/T009 acceptance and T010 authoring are verified on their separate development branch, pending separate integration.
+**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001–T009, T015, T018, T026, T027, T031 and T032 complete after reviewed integration and passing post-merge verification; 77 tasks remain unchecked. T010 authoring is verified separately on the preserved Backend development branch; its 63 intentional red assertions are not merged or marked complete centrally.
 **Original baseline approval scope**: The human project owner approved the refined 92-task plan and protocol,
 subject to final file verification, and authorized only their baseline commit. This records task
 approval, not permission to start execution, create worktrees, launch agents, push, merge or deploy.
@@ -78,6 +78,18 @@ separate T011 authorization on T010's original branch. No Backend task commit is
 marked complete centrally here; T010's 63 expected assertion failures remain visible on that
 branch. Only T026/T027/T031/T032 completion markers change. No main merge, deployment,
 frozen API change or production security clearance is authorized.
+**PostgreSQL foundation integration (2026-10-29)**: The human authorized merging exact T009
+`60e4dbe591b5267d61101d1f68d54dbe81117da8` with its T007 parent, excluding T010, into clean
+Lead `82e683bb73c3c143a290f7491a4cd29d55924a1d`. Non-fast-forward merge:
+`36afeae751cd1719089b11ba7f3f1cbefb5a49a0`. All four regression lanes passed, including
+267 Backend, 85 Frontend browser, 317 QA Python, 4 QA browser and 23 CI policy tests.
+Fresh real PostgreSQL 16 migration/role/transaction/durability verification passed 26 groups;
+the rebuilt Backend image also passed 267 tests. Only T007/T009 are newly complete; T010
+remains unchecked and red on its preserved branch, where T011 is authorized separately.
+See the [integration and release-risk record](../../docs/reviews/backend-database-foundation.md)
+for exact source commits, commands, evidence and next runtime prerequisites. Known image
+findings still block production clearance; T-02/T-03 remain open. This approval permits the
+separate progress commit and feature-branch push, not main integration or deployment.
 **Frozen source baseline**: `adc0b83a4408493ac44d3a7571dfd3d25a758679` on actual branch
 `001-appointment-scheduling` (verified clean before generation; one local commit ahead of origin).
 **Inputs**: [constitution](../../.specify/memory/constitution.md), [spec.md](spec.md),
@@ -152,7 +164,7 @@ changing shared ownership; T001 records its reviewed revision before execution.
 
 - [X] T006 Owner: QA/DevOps — Author initial GitHub Actions generation/build/unit jobs independently of feature implementation. Paths: `.github/workflows/ci.yml`. Depends: T004, T005, T002, T003. Accept: Node 22/Python 3.12 locked installs, contract no-diff, frontend type/build and backend Ruff/mypy/unit commands execute; record image and timezone/browser versions. Future suites are explicit, missing tests cannot silently pass; no deployment job, credentials or body-bearing artifacts.
 
-- [ ] T007 [P] Owner: Backend — Build the backend image from its lock and publish migration/seed/worker/health CLI interfaces for QA. Paths: `backend/Dockerfile`, `backend/.dockerignore`. Depends: T002. Accept: Pin every FROM to an exact Python 3.12 patch release plus verified immutable digest; lock Python/tzdata packages, set PYTHONTZPATH="" to select packaged tzdata and TZ=UTC, and report package/IANA versions. Image imports app, runs pytest/static commands and publishes migration/seed/worker/health CLI interfaces; excludes .venv/.env/caches, no migration per API replica. Missing configured tzdata fails validation; do not invent digest values in documentation.
+- [X] T007 [P] Owner: Backend — Build the backend image from its lock and publish migration/seed/worker/health CLI interfaces for QA. Paths: `backend/Dockerfile`, `backend/.dockerignore`. Depends: T002. Accept: Pin every FROM to an exact Python 3.12 patch release plus verified immutable digest; lock Python/tzdata packages, set PYTHONTZPATH="" to select packaged tzdata and TZ=UTC, and report package/IANA versions. Image imports app, runs pytest/static commands and publishes migration/seed/worker/health CLI interfaces; excludes .venv/.env/caches, no migration per API replica. Missing configured tzdata fails validation; do not invent digest values in documentation.
 
 - [X] T008 [P] Owner: Frontend — Build the frontend image and publish its serving/API-origin interface for QA. Paths: `frontend/Dockerfile`, `frontend/.dockerignore`. Depends: T003. Accept: Pin every FROM to an exact Node 22 patch/base release plus verified immutable digest; locked build succeeds and records image/browser versions. Publish VITE_API_BASE_URL build/start behavior for the QA-assigned loopback API port; exclude secrets/node_modules/private state. QA consumes the image without editing this Dockerfile.
 
@@ -164,7 +176,7 @@ changing shared ownership; T001 records its reviewed revision before execution.
 
 **Independent verification / checkpoint**: Empty/repeat migrations, actual GiST/role/check tests, exact cleanup boundaries and cold/repeat startup pass. The dedicated contact worker exists before guests can create personal data. Real-backend story integration depends on T024; explicitly designated Frontend fixtures, QA discovery test authoring and T022 static preparation may precede it.
 
-- [ ] T009 Owner: Backend — Create SQLAlchemy session/model base and Alembic environment with PostgreSQL durability checks. Paths: `backend/app/db/session.py`, `backend/app/db/base.py`, `backend/app/models/__init__.py`, `backend/alembic.ini`, `backend/migrations/env.py`, `backend/migrations/versions/0001_schemas.py`. Depends: T002, T007. Accept: Empty PostgreSQL 16 upgrade creates public/private schemas, least-privilege runtime/backup roles, explicit ACLs and btree_gist; no embedded passwords or default backup grants on future tables; fsync/synchronous_commit are on and sessions UTC; READ COMMITTED transaction scopes never share sessions across threads.
+- [X] T009 Owner: Backend — Create SQLAlchemy session/model base and Alembic environment with PostgreSQL durability checks. Paths: `backend/app/db/session.py`, `backend/app/db/base.py`, `backend/app/models/__init__.py`, `backend/alembic.ini`, `backend/migrations/env.py`, `backend/migrations/versions/0001_schemas.py`. Depends: T002, T007. Accept: Empty PostgreSQL 16 upgrade creates public/private schemas, least-privilege runtime/backup roles, explicit ACLs and btree_gist; no embedded passwords or default backup grants on future tables; fsync/synchronous_commit are on and sessions UTC; READ COMMITTED transaction scopes never share sessions across threads.
 
 - [ ] T010 Owner: Backend — Write failing PostgreSQL migration/constraint/role tests before the mapped tables. Paths: `backend/tests/integration/test_migrations.py`, `backend/tests/integration/test_constraints.py`, `backend/tests/integration/test_roles.py`. Depends: T009. Accept: Tests fail on absent tables/constraints, use independent real PostgreSQL connections, and cover exclusion, adjacency, RESTRICT FKs, stable checks, private role access and forbidden backup reads; SQLite substitution is rejected.
 
@@ -844,8 +856,10 @@ review. The separately authorized T006/T008 integration and branch publication a
 the second completion record. T015/T018 integration is documented in the
 [Backend foundations record](../../docs/reviews/backend-foundations.md). The later
 [discovery development record](../../docs/reviews/discovery-development.md) completes four more
-tasks and records Backend source readiness/T011 authorization. Thirteen tasks are complete;
-79 remain unchecked, including the separate Backend tasks awaiting integration.
+tasks and records Backend source readiness/T011 authorization. The
+[PostgreSQL foundation record](../../docs/reviews/backend-database-foundation.md) completes
+T007/T009 after green integration, preserving T010 and its separate T011 continuation.
+Fifteen tasks are complete; 77 remain unchecked.
 No automatic progression to further tasks, recovery, main integration or deployment is authorized.
 
 ## Task inventory
