@@ -1,4 +1,4 @@
-"""T004 host interface. T022 will supply lifecycle adapters and milestone inventories.
+"""T004 host interface with T022 partial STATIC preparation.
 
 SLOTBOOK_TEST_MANIFEST must name an owner-only JSON file outside tracked source.
 check validates an immutable candidate; run additionally requires target observation in T022.
@@ -30,6 +30,10 @@ from harness.targets import (  # noqa: E402
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser(
+        "static-check",
+        help="T022 synthetic Compose configuration only; no daemon/lifecycle",
+    )
     commands.add_parser("check")
     commands.add_parser("collect")
     run = commands.add_parser("run")
@@ -48,6 +52,11 @@ def main(argv=None):
     selection.add_argument("--milestone", choices=["T024", "T034"])
     args = parser.parse_args(argv)
     try:
+        if args.command == "static-check":
+            from harness.compose import static_check
+
+            static_check(Path(__file__).resolve().parents[2])
+            return 0
         location = os.environ.get("SLOTBOOK_TEST_MANIFEST")
         require(location, "manifest_required")
         m = validate_manifest(read_private_json(location))
