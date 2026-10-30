@@ -1,39 +1,151 @@
+# T022 PARTIAL STATIC PREPARATION. No runtime acceptance; T017/T020/T021 are absent.
+# Required values come from private configuration, never the historical .env.example.
+# Reserved argv below are approved handoff names, NOT implemented CLI successes.
+name: ${SLOTBOOK_PROJECT:?explicit project required}
+
+x-slotbook-preparation:
+  status: partial-static-only
+  blocked_by: [T017, T020, T021]
+  minimum_compose: 2.24.4
+
+x-runtime: &runtime
+  restart: "no"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: [/tmp:rw,mode=1777]
+  # Do not persist unreviewed raw application/DB output as Docker logs.
+  logging: {driver: none}
+
+x-backend: &backend
+  <<: *runtime
+  image: ${SLOTBOOK_BACKEND_IMAGE:?reviewed Backend image tag required}
+  build: {context: ./backend, dockerfile: Dockerfile}
+  platform: ${SLOTBOOK_PLATFORM:?reviewed Linux platform required}
+  env_file:
+    - path: ${SLOTBOOK_RUNTIME_ENV_FILE:?private Backend configuration handoff required}
+      required: true
+  environment:
+    TZ: UTC
+    PYTHONTZPATH: ""
+    DATABASE_URL: ${SLOTBOOK_DATABASE_URL:?separate runtime-role DSN required}
+
 services:
   db:
-    image: postgres:16-alpine
+    # Reuses reviewed T009 index; both platform configs report PG_VERSION=16.15.
+    image: postgres:16.15@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+    platform: ${SLOTBOOK_PLATFORM:?reviewed Linux platform required}
+    restart: "no"
+    logging: {driver: none}
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-slotbook}
-      POSTGRES_USER: ${POSTGRES_USER:-slotbook}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev-only-change-me}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+      TZ: UTC
+      POSTGRES_DB: ${SLOTBOOK_DATABASE:?explicit database required}
+      POSTGRES_USER: ${SLOTBOOK_POSTGRES_USER:?bootstrap/migration principal required}
+      POSTGRES_PASSWORD: ${SLOTBOOK_POSTGRES_PASSWORD:?private database credential required}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=peer
+    command:
+      - postgres
+      - -c
+      - fsync=on
+      - -c
+      - synchronous_commit=on
+      - -c
+      - full_page_writes=on
+      - -c
+      - timezone=UTC
+      - -c
+      - default_transaction_isolation=read committed
+      - -c
+      - log_statement=none
+      - -c
+      - log_min_messages=panic
+      - -c
+      - log_min_error_statement=panic
+      - -c
+      - log_parameter_max_length=0
+      - -c
+      - log_parameter_max_length_on_error=0
+    volumes: [pgdata:/var/lib/postgresql/data]
+    # Internal only. pg_isready checks connectivity, NOT T021 application readiness.
+    expose: ["5432"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 5s
       timeout: 3s
       retries: 15
+
+  migrate:
+    <<: *backend
+    env_file: []
+    environment:
+      TZ: UTC
+      PYTHONTZPATH: ""
+      MIGRATION_DATABASE_URL: ${SLOTBOOK_MIGRATION_DATABASE_URL:?separate migration-role DSN required}
+    command: [alembic, upgrade, head]
+    healthcheck: {disable: true}
+    depends_on:
+      db: {condition: service_healthy}
+
+  seed:
+    <<: *backend
+    # T017 must publish mode/inputs/flags/exits. This reserved module is absent today.
+    x-slotbook-blocked-by: T017
+    env_file:
+      - path: ${SLOTBOOK_SEED_ENV_FILE:?T017 private synthetic-seed handoff required}
+        required: true
+    command: [python, -m, app.cli.seed]
+    healthcheck: {disable: true}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+
   backend:
-    build: ./backend
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-slotbook}:${POSTGRES_PASSWORD:-dev-only-change-me}@db:5432/${POSTGRES_DB:-slotbook}
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
+    <<: *backend
+    x-slotbook-blocked-by: T021
+    command: [uvicorn, app.main:app, --host, 0.0.0.0, --port, "8000", --no-access-log]
+    ports: ["127.0.0.1:${SLOTBOOK_API_PORT:?assigned API port required}:8000"]
+    # Intentionally cannot pass until T021 provides the real readiness CLI.
+    healthcheck:
+      test: [CMD, python, -m, app.cli.readiness]
+      interval: 5s
+      timeout: 3s
+      retries: 15
     depends_on:
-      db:
-        condition: service_healthy
+      db: {condition: service_healthy}
+      seed: {condition: service_completed_successfully}
+
+  retention:
+    <<: *backend
+    x-slotbook-blocked-by: T020
+    command: [python, -m, app.workers.retention]
+    healthcheck:
+      test: [CMD, python, -m, app.cli.retention_status]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    depends_on:
+      db: {condition: service_healthy}
+      seed: {condition: service_completed_successfully}
+
   frontend:
-    build: ./frontend
+    <<: *runtime
+    image: ${SLOTBOOK_FRONTEND_IMAGE:?reviewed Frontend image tag required}
+    platform: ${SLOTBOOK_PLATFORM:?reviewed Linux platform required}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${SLOTBOOK_BROWSER_API_ORIGIN:?browser-reachable build-time API origin required}
     environment:
-      VITE_API_BASE_URL: http://localhost:8000
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      VITE_API_BASE_URL: ${SLOTBOOK_BROWSER_API_ORIGIN:?browser-reachable build-time API origin required}
+    ports: ["127.0.0.1:${SLOTBOOK_UI_PORT:?assigned UI port required}:5173"]
     depends_on:
-      - backend
+      backend: {condition: service_healthy}
+      retention: {condition: service_healthy}
+
+networks:
+  default:
+    name: ${SLOTBOOK_PROJECT:?explicit project required}_default
+    internal: true
 volumes:
   pgdata:
+    name: ${SLOTBOOK_PROJECT:?explicit project required}_pgdata

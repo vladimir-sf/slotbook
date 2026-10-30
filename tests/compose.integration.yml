@@ -1,0 +1,43 @@
+# Add after the base file. Host runner must select and verify clean immutable contexts.
+# !reset / !override require Compose >=2.24.4; no implicit developer mounts survive.
+name: slotbook-qa-${SLOTBOOK_RUN_ID:?unique QA run required}
+
+x-qa-labels: &qa-labels
+  slotbook.disposable: "true"
+  slotbook.run: ${SLOTBOOK_RUN_ID:?unique QA run required}
+  slotbook.candidate: ${SLOTBOOK_CANDIDATE_SHA256:?approved candidate fingerprint required}
+x-selected-backend: &selected-backend
+  build:
+    context: ${SLOTBOOK_BACKEND_CONTEXT:?selected clean Backend context required}
+    dockerfile: Dockerfile
+  volumes: !reset []
+  labels: *qa-labels
+
+services:
+  db:
+    ports: !reset []
+    labels: *qa-labels
+  migrate:
+    <<: *selected-backend
+  seed:
+    <<: *selected-backend
+  backend:
+    <<: *selected-backend
+    ports: !override ["127.0.0.1:${SLOTBOOK_API_PORT:?assigned API port required}:8000"]
+  retention:
+    <<: *selected-backend
+  frontend:
+    build:
+      context: ${SLOTBOOK_FRONTEND_CONTEXT:?selected clean Frontend context required}
+      dockerfile: Dockerfile
+    volumes: !reset []
+    labels: *qa-labels
+    ports: !override ["127.0.0.1:${SLOTBOOK_UI_PORT:?assigned UI port required}:5173"]
+networks:
+  default:
+    name: slotbook-qa-${SLOTBOOK_RUN_ID:?unique QA run required}_default
+    labels: *qa-labels
+volumes:
+  pgdata:
+    name: slotbook-qa-${SLOTBOOK_RUN_ID:?unique QA run required}_pgdata
+    labels: *qa-labels

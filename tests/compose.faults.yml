@@ -1,0 +1,20 @@
+# EXPLICIT TEST-ONLY overlay, never included in ordinary Compose startup.
+# T016/T020 must publish their entrypoint argv before these required module inputs exist.
+# Control is private FileClock/barrier data, NOT an HTTP route or production test switch.
+services:
+  backend:
+    command: [python, -m, "${SLOTBOOK_TEST_SERVER_MODULE:?Backend private server entrypoint handoff required}"]
+    user: ${SLOTBOOK_QA_UID:?private control owner uid required}:${SLOTBOOK_QA_GID:?private control owner gid required}
+    volumes: !override
+      - type: bind
+        source: ${SLOTBOOK_CONTROL_DIR:?protected per-run test control required}
+        target: /run/slotbook-control
+        bind: {create_host_path: false}
+  retention:
+    command: [python, -m, "${SLOTBOOK_TEST_WORKER_MODULE:?Backend private worker entrypoint handoff required}"]
+    user: ${SLOTBOOK_QA_UID:?private control owner uid required}:${SLOTBOOK_QA_GID:?private control owner gid required}
+    volumes: !override
+      - type: bind
+        source: ${SLOTBOOK_CONTROL_DIR:?protected per-run test control required}
+        target: /run/slotbook-control
+        bind: {create_host_path: false}

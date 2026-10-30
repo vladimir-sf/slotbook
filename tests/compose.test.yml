@@ -1,0 +1,48 @@
+# Optional QA service only. Internal networking, no host lifecycle or Docker socket.
+# Real contract execution remains blocked on the host-verified live provider / T024.
+services:
+  qa:
+    profiles: [qa]
+    image: ${SLOTBOOK_QA_IMAGE:?selected QA image required}
+    platform: ${SLOTBOOK_PLATFORM:?reviewed Linux platform required}
+    build:
+      context: ${SLOTBOOK_QA_CONTEXT:?selected QA tests context required}
+      dockerfile: Dockerfile
+    # Protected host reports need the owner's numeric, non-root uid/gid.
+    user: ${SLOTBOOK_QA_UID:?private directory owner uid required}:${SLOTBOOK_QA_GID:?private directory owner gid required}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:rw,mode=1777]
+    logging: {driver: none}
+    environment:
+      TZ: UTC
+      SLOTBOOK_API_BASE_URL: http://backend:8000
+      SLOTBOOK_CONTRACT: /contracts/tsp-output/@typespec/openapi3/openapi.yaml
+      SLOTBOOK_QA_PRIVATE_DIR: /run/qa-private
+      SLOTBOOK_CANDIDATE_SHA256: ${SLOTBOOK_CANDIDATE_SHA256:?approved candidate fingerprint required}
+      # Never run fixture self-checks as if they were live contract verification.
+      SLOTBOOK_CATALOG_MODE: live
+    command: [python, -m, pytest, -c, /quality/pytest.ini, /quality/contract, -m, "not harness and not schema"]
+    volumes:
+      - type: bind
+        source: ${SLOTBOOK_QA_CONTEXT:?selected QA tests context required}
+        target: /quality
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${SLOTBOOK_CONTRACT_CONTEXT:?selected frozen contract directory required}
+        target: /contracts
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${SLOTBOOK_QA_REPORT_DIR:?protected QA reports required}
+        target: /run/qa-private
+        bind: {create_host_path: false}
+    depends_on:
+      backend: {condition: service_healthy}
+      retention: {condition: service_healthy}
+    labels:
+      slotbook.disposable: "true"
+      slotbook.run: ${SLOTBOOK_RUN_ID:?unique QA run required}
+      slotbook.candidate: ${SLOTBOOK_CANDIDATE_SHA256:?approved candidate fingerprint required}
