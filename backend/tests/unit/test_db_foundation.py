@@ -171,10 +171,10 @@ def test_each_scope_owns_a_session_in_its_thread_and_closes_it(monkeypatch):
         )
 
 
-def test_base_registry_is_empty_and_has_stable_constraint_names():
+def test_base_registry_is_shared_and_has_stable_constraint_names():
     assert RegisteredBase is Base
-    assert not Base.metadata.tables
-    # Use a separate copy so the production registry remains empty.
+    assert RegisteredBase.metadata is Base.metadata
+    # T011 registers configuration models; keep this naming probe isolated.
     metadata = type(Base.metadata)(naming_convention=Base.metadata.naming_convention)
     table = Table(
         "synthetic", metadata, Column("id", Integer, primary_key=True), UniqueConstraint("id")
