@@ -25,6 +25,10 @@ def run_backend_suite(job, ci_dir, require):
     require(re.fullmatch(r"sha256:[a-f0-9]{64}", image), "backend_image_invalid")
     job.report["backend_image"] = image
 
+    # A cold runner's pull progress shares the command log with stdout.
+    # Keep it separate from the detached run's container ID.
+    job.command("postgres-image-pull", ["docker", "pull", POSTGRES_IMAGE])
+
     run = uuid.uuid4().hex[:12]
     database = "slotbook-t010-" + run
     network = database + "-network"
@@ -61,6 +65,7 @@ def run_backend_suite(job, ci_dir, require):
                         "docker",
                         "run",
                         "--detach",
+                        "--pull=never",
                         "--rm",
                         "--name",
                         database,
@@ -103,12 +108,15 @@ def run_backend_suite(job, ci_dir, require):
                 .decode()
                 .strip()
             )
+            require(
+                re.fullmatch(r"[a-f0-9]{64}", container),
+                "postgres_container_id_invalid",
+            )
             [info] = json.loads(
                 job.command("postgres-target-inspect", ["docker", "inspect", container])
             )
             require(
-                re.fullmatch(r"[a-f0-9]{64}", container)
-                and info["Id"] == container
+                info["Id"] == container
                 and info["Name"] == "/" + database
                 and info["Config"]["Labels"].get(RUN_LABEL) == run
                 and info["Config"]["Image"] == POSTGRES_IMAGE
