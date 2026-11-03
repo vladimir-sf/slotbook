@@ -1,7 +1,7 @@
 """T006 tooling jobs. Raw subprocess output stays private; only allowlisted evidence is printed.
 
-Run the same entry point locally and on GitHub. This does not provision app/DB targets,
-invoke the future lifecycle harness, or claim product/runtime acceptance.
+Run the same entry point locally and on GitHub. The Backend lane provisions an isolated
+schema test database. Full application lifecycle and product acceptance are separate.
 """
 
 import argparse
@@ -18,6 +18,8 @@ import tempfile
 import uuid
 import xml.etree.ElementTree as ET
 
+from postgres import run_backend_suite
+
 ROOT = Path(__file__).resolve().parents[2]
 CI_DIR = Path(__file__).resolve().parent
 FROZEN = "adc0b83a4408493ac44d3a7571dfd3d25a758679"
@@ -26,7 +28,7 @@ BLOBS = {
     "contracts/tsp-output/@typespec/openapi3/openapi.yaml": "3ad47840cc0dd120d070599e9fad218230f4a845",
     "frontend/src/api/schema.d.ts": "4b6a9b438f9ed60e8e271acd2b901a9376c738be",
 }
-MINIMUM_CASES = {"backend": 7, "frontend": 54, "qa": 80, "qa-browser": 4}
+MINIMUM_CASES = {"backend": 500, "frontend": 54, "qa": 80, "qa-browser": 4}
 LOCKS = {
     "contract": ["contracts/package-lock.json", "frontend/package-lock.json"],
     "backend": ["backend/requirements.lock"],
@@ -152,18 +154,22 @@ class Job:
                 "GITHUB_STEP_SUMMARY",
                 "PYTEST_ADDOPTS",
                 "PYTEST_PLUGINS",
+                "SLOTBOOK_CI_INTEGRATION_INVENTORY",
+                "SLOTBOOK_TEST_DATABASE_CONFIG",
                 "NODE_OPTIONS",
             }:
                 del self.env[key]
         self.env.update(TZ="UTC", PYTHONTZPATH="", PYTHONPATH=str(CI_DIR), CI="true")
         self.report = {
-            "scope": "T006-tooling-only",
+            "scope": "backend-schema-and-tooling"
+            if lane == "backend"
+            else "T006-tooling-only",
             "lane": lane,
             "checks": [],
             "suites": {},
             "versions": {},
             "deferred": [
-                "PostgreSQL/runtime: T022/T087",
+                "Full application lifecycle: T022/T087",
                 "product acceptance: later story tasks",
             ],
         }
@@ -406,8 +412,36 @@ console.log(JSON.stringify({playwright:require('playwright/package.json').versio
                 [python, "-m", "ruff", "format", "--check", "app", "tests"],
                 cwd=cwd,
             )
-            self.command("backend-mypy", [python, "-m", "mypy", "app"], cwd=cwd)
-            self.pytest(python)
+            self.command(
+                "backend-mypy",
+                [
+                    python,
+                    "-m",
+                    "mypy",
+                    "--cache-dir",
+                    self.private / "mypy-cache",
+                    "app",
+                ],
+                cwd=cwd,
+            )
+            output = run_backend_suite(self, CI_DIR, require)
+            expected = json.loads((output / "inventory.json").read_text())
+            integration = json.loads((output / "integration.json").read_text())
+            require(
+                len(set(integration)) == len(integration)
+                and set(integration).issubset(expected)
+                and len(integration) >= 138
+                and len(expected) - len(integration) >= 362,
+                "backend_suite_partition_missing",
+            )
+            rows = junit_rows((output / "pytest.xml").read_bytes(), self.candidate)
+            self.report["suites"]["python"] = check_inventory(
+                expected, rows, MINIMUM_CASES["backend"]
+            )
+            self.report["schema_integration_cases"] = len(integration)
+            postgres = (output / "postgres-version").read_text()
+            require(re.fullmatch(r"16\.[0-9]+", postgres), "unsafe_postgres_version")
+            self.report["versions"]["postgres"] = postgres
             versions = json.loads(
                 self.command(
                     "timezone-version",
@@ -520,7 +554,7 @@ console.log(JSON.stringify({playwright:require('playwright/package.json').versio
         if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
             with Path(summary).open("a") as file:
                 file.write(
-                    "T006 tooling-only result\n\n```json\n"
+                    "SlotBook verification result\n\n```json\n"
                     + json_bytes(self.report).decode()
                     + "\n```\n"
                 )
