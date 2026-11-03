@@ -42,3 +42,11 @@ T010–T014 completion is based on this schema verification. T022 remains open f
 full application runtime acceptance. The production release restrictions in the
 [Backend foundation record](backend-database-foundation.md#release-risks-retained)
 and [Frontend image review](ci-frontend-image.md) still apply.
+
+The first [hosted run](https://github.com/vladimir-sf/slotbook/actions/runs/41610233593)
+passed Contract, Frontend and QA. Backend built its image and started PostgreSQL,
+then failed at container inspection. Follow-up `8cf76a4ccfe7a24dbdfff56ffb2fa5614ec6871c`
+separates the pinned PostgreSQL pull from startup and validates the container ID
+before inspection. All four local lanes passed on the follow-up merge
+`30619455ee042b1ef6e281f3c72589387a9c014b`, including the fresh Backend build and
+the complete 500-test PostgreSQL-backed suite.
