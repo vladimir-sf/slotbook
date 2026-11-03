@@ -590,6 +590,21 @@ function checkGuardRegressions(doc) {
   );
 }
 
+async function checkRedoclyHeaderMatching(frontendRequire) {
+  const { readFileFromUrl } = frontendRequire("@redocly/openapi-core/lib/utils.js");
+  await readFileFromUrl("https://schema.example.test/api.yaml", {
+    headers: [
+      { matches: "schema.example.test/**", name: "X-Match", value: "yes" },
+      { matches: "other.example.test/**", name: "X-No-Match", value: "no" },
+    ],
+    customFetch: async (_url, { headers }) => {
+      assert.deepEqual(headers, { "X-Match": "yes" });
+      return new Response("openapi: 3.0.0");
+    },
+  });
+  console.log("PASS: Redocly header matching with patched minimatch.");
+}
+
 async function main() {
   assert.ok(
     Number(process.versions.node.split(".")[0]) >= 22,
@@ -601,7 +616,9 @@ async function main() {
   const frontendRequire = createRequire(
     path.join(root, "frontend/package.json"),
   );
+  const redoclyPreload = path.join(root, "frontend/scripts/redocly-minimatch.cjs");
   try {
+    frontendRequire(redoclyPreload);
     ({ parse } = contractRequire("yaml"));
     Ajv = contractRequire("ajv");
     addFormats = contractRequire("ajv-formats");
@@ -658,6 +675,8 @@ async function main() {
     );
     const generatedTypes = path.join(scratch, "schema.d.ts");
     run(process.execPath, [
+      "--require",
+      redoclyPreload,
       path.join(root, "frontend/node_modules/openapi-typescript/bin/cli.js"),
       generatedOpenapi,
       "--output",
@@ -702,7 +721,10 @@ async function main() {
     }
     // Explicit commit-relative diff includes staged and unstaged drift, even if HEAD moved.
     run("git", ["diff", "--exit-code", baseline, "--", ...frozenFiles]);
-    if (selfTest.length) checkGuardRegressions(doc);
+    if (selfTest.length) {
+      checkGuardRegressions(doc);
+      await checkRedoclyHeaderMatching(frontendRequire);
+    }
     console.log(
       "PASS: generated TypeScript positive/expected-negative checks; byte-for-byte regeneration; git diff --exit-code against frozen API v1 (all three files).",
     );

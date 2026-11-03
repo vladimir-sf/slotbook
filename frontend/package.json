@@ -14,7 +14,12 @@
     "typecheck": "tsc -b && tsc --noEmit --strict --target ES2022 --lib ES2022,DOM,DOM.Iterable --module ESNext --moduleResolution Bundler --esModuleInterop --skipLibCheck --types node playwright.config.ts tests/fixtures/api.ts tests/scaffold.spec.ts",
     "test": "npm run typecheck && playwright test",
     "preview": "vite preview",
-    "generate:api": "openapi-typescript ../contracts/tsp-output/@typespec/openapi3/openapi.yaml -o src/api/schema.d.ts"
+    "generate:api": "node --require ./scripts/redocly-minimatch.cjs ./node_modules/openapi-typescript/bin/cli.js ../contracts/tsp-output/@typespec/openapi3/openapi.yaml -o src/api/schema.d.ts"
+  },
+  "overrides": {
+    "@redocly/openapi-core@^1.34.6": {
+      "minimatch": "11.0.1"
+    }
   },
   "dependencies": {
     "react": "^19.0.0",
