@@ -12,8 +12,8 @@ concurrency:
   group: tooling-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# No persisted dependency caches, secrets, service databases, deployment or artifact uploads.
-# Runtime/PostgreSQL suites belong to T022/T087; these jobs verify tooling/scaffolds only.
+# Backend builds its image and runs schema tests on a disposable internal Docker network.
+# Full application lifecycle verification remains T022/T087.
 env:
   TZ: UTC
   PYTHONTZPATH: ''

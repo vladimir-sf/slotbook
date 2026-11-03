@@ -10,13 +10,16 @@ def pytest_collection_modifyitems(items):
     identities = [
         "QA-" + hashlib.sha256(item.nodeid.encode()).hexdigest() for item in items
     ]
-    path = Path(os.environ["SLOTBOOK_CI_INVENTORY"])
-    if path.exists():
-        if json.loads(path.read_text()) != identities:
-            raise RuntimeError("ci_inventory_changed")
-    else:
-        with path.open("x") as file:
-            file.write(json.dumps(identities))
+    record_inventory(Path(os.environ["SLOTBOOK_CI_INVENTORY"]), identities)
+    if integration := os.environ.get("SLOTBOOK_CI_INTEGRATION_INVENTORY"):
+        record_inventory(
+            Path(integration),
+            [
+                identity
+                for item, identity in zip(items, identities, strict=True)
+                if item.get_closest_marker("integration")
+            ],
+        )
     # QA's own conftest emits these properties. Backend stays independent of QA packages.
     if os.environ["SLOTBOOK_CI_LANE"] == "backend":
         for item, identity in zip(items, identities, strict=True):
@@ -26,3 +29,12 @@ def pytest_collection_modifyitems(items):
                     ("candidate_sha256", os.environ["SLOTBOOK_CANDIDATE_SHA256"]),
                 ]
             )
+
+
+def record_inventory(path, identities):
+    if path.exists():
+        if json.loads(path.read_text()) != identities:
+            raise RuntimeError("ci_inventory_changed")
+    else:
+        with path.open("x") as file:
+            file.write(json.dumps(identities))

@@ -88,13 +88,14 @@ PY
 # is needed; read-only rootfs plus a writable /tmp supports tests/static checks.
 USER 65532:65532
 # Keep generated caches and raw test output in a disposable build mount; none
-# become image layers. Runtime verification supplies its own writable /tmp.
+# become image layers. PostgreSQL integration runs from the built image against
+# a separately provisioned disposable database.
 RUN --mount=type=tmpfs,target=/tmp slotbook-entrypoint \
     && python -c 'from app.main import app; assert app is not None' \
     && python -m ruff check app tests \
     && python -m ruff format --check app tests \
     && python -m mypy app \
-    && python -m pytest -q \
+    && python -m pytest -q -m "not integration" \
     && python - <<'CHECKS'
 import os
 import subprocess
@@ -129,7 +130,7 @@ CHECKS
 # Health CLI (inside a running API container):
 # python -c 'import urllib.request; r=urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2); assert r.status == 200'
 # Version/source check: docker run --rm IMAGE slotbook-entrypoint
-# Checks: docker run --rm --network none --read-only --tmpfs /tmp:rw,mode=1777 IMAGE python -m pytest -q
+# Checks: docker run --rm --network none --read-only --tmpfs /tmp:rw,mode=1777 IMAGE python -m pytest -q -m "not integration"
 # Static checks replace the final command with python -m ruff check app tests,
 # python -m ruff format --check app tests, or python -m mypy app.
 #
