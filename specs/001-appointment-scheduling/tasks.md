@@ -1,10 +1,10 @@
 ---
-description: "Approved SlotBook MVP tasks; 15 tasks integrated and complete, 77 tasks remain unchecked"
+description: "Approved SlotBook MVP tasks; 20 tasks integrated and complete, 72 tasks remain unchecked"
 ---
 
 # Tasks: SlotBook Appointment Scheduling MVP
 
-**Generated / refined**: 2026-10-25. **Status**: approved task plan; T001–T009, T015, T018, T026, T027, T031 and T032 complete after reviewed integration and passing post-merge verification; 77 tasks remain unchecked. T010 authoring is verified separately on the preserved Backend development branch; its 63 intentional red assertions are not merged or marked complete centrally.
+**Generated / refined**: 2026-10-25. **Status**: approved task plan. T001–T015, T018, T026, T027, T031 and T032 are complete after reviewed integration and passing verification. 72 tasks remain unchecked, including T022.
 **Original baseline approval scope**: The human project owner approved the refined 92-task plan and protocol,
 subject to final file verification, and authorized only their baseline commit. This records task
 approval, not permission to start execution, create worktrees, launch agents, push, merge or deploy.
@@ -90,6 +90,10 @@ See the [integration and release-risk record](../../docs/reviews/backend-databas
 for exact source commits, commands, evidence and next runtime prerequisites. Known image
 findings still block production clearance; T-02/T-03 remain open. This approval permits the
 separate progress commit and feature-branch push, not main integration or deployment.
+**Schema batch completion (2026-11-03)**: The integrated Backend image passed all 500 cases
+against disposable PostgreSQL, including 138 integration cases. All four local CI lanes
+passed. T010–T014 are complete. T022 still requires full application runtime acceptance.
+See the [schema publication record](../../docs/reviews/schema-foundation-publication.md).
 **Frozen source baseline**: `adc0b83a4408493ac44d3a7571dfd3d25a758679` on actual branch
 `001-appointment-scheduling` (verified clean before generation; one local commit ahead of origin).
 **Inputs**: [constitution](../../.specify/memory/constitution.md), [spec.md](spec.md),
@@ -178,24 +182,24 @@ changing shared ownership; T001 records its reviewed revision before execution.
 
 - [X] T009 Owner: Backend — Create SQLAlchemy session/model base and Alembic environment with PostgreSQL durability checks. Paths: `backend/app/db/session.py`, `backend/app/db/base.py`, `backend/app/models/__init__.py`, `backend/alembic.ini`, `backend/migrations/env.py`, `backend/migrations/versions/0001_schemas.py`. Depends: T002, T007. Accept: Empty PostgreSQL 16 upgrade creates public/private schemas, least-privilege runtime/backup roles, explicit ACLs and btree_gist; no embedded passwords or default backup grants on future tables; fsync/synchronous_commit are on and sessions UTC; READ COMMITTED transaction scopes never share sessions across threads.
 
-- [ ] T010 Owner: Backend — Write failing PostgreSQL migration/constraint/role tests before the mapped tables. Paths: `backend/tests/integration/test_migrations.py`, `backend/tests/integration/test_constraints.py`, `backend/tests/integration/test_roles.py`. Depends: T009. Accept: Tests fail on absent tables/constraints, use independent real PostgreSQL connections, and cover exclusion, adjacency, RESTRICT FKs, stable checks, private role access and forbidden backup reads; SQLite substitution is rejected.
+- [X] T010 Owner: Backend — Write failing PostgreSQL migration/constraint/role tests before the mapped tables. Paths: `backend/tests/integration/test_migrations.py`, `backend/tests/integration/test_constraints.py`, `backend/tests/integration/test_roles.py`. Depends: T009. Accept: Tests fail on absent tables/constraints, use independent real PostgreSQL connections, and cover exclusion, adjacency, RESTRICT FKs, stable checks, private role access and forbidden backup reads; SQLite substitution is rejected.
 
-- [ ] T011 Owner: Backend — Map configuration tables and their atomic schedule constraints. Paths: `backend/app/models/activity.py`, `backend/app/models/availability.py`, `backend/app/models/__init__.py`, `backend/migrations/versions/0002_configuration.py`. Depends: T010. Accept: Migrations preserve exact source constraints and explicit configuration backup grants, accept touching windows, reject duplicate/overlap/overnight windows and enforce slug uniqueness; positive/negative migration tests pass for these tables. Covers: FR-002, FR-015, FR-016, FR-027, FR-031.
+- [X] T011 Owner: Backend — Map configuration tables and their atomic schedule constraints. Paths: `backend/app/models/activity.py`, `backend/app/models/availability.py`, `backend/app/models/__init__.py`, `backend/migrations/versions/0002_configuration.py`. Depends: T010. Accept: Migrations preserve exact source constraints and explicit configuration backup grants, accept touching windows, reject duplicate/overlap/overnight windows and enforce slug uniqueness; positive/negative migration tests pass for these tables. Covers: FR-002, FR-015, FR-016, FR-027, FR-031.
   Verbatim data-model constraints for `activities` — fields: id PK, slug UNIQUE, title, description, duration_minutes, timezone, is_active; rules: "Description 1–2000 Unicode code points after outer trim, multiline/plain text. Positive duration divisible by 15. IANA timezone validated against pinned tzdata. Slug/title retain existing semantics; no unapproved name/contact length rules."
   Verbatim data-model constraints for `weekly_windows` — fields: id PK, activity_id FK, iso_weekday, start_local_time, end_local_time; rules: "weekday 1–7; end > start within one local date; no duplicate/overlap for activity/weekday. Touching stays distinct. Local times have no timezone/offset."
   Verbatim data-model constraints for `blocked_dates` — fields: activity_id FK, local_date; composite PK; rules: "Exactly one activity-local date. Blocking does not mutate existing bookings. Repeated insert leaves the same block."
 
-- [ ] T012 Owner: Backend — Map immutable booking history and isolated ephemeral contacts; add the named GiST exclusion. Paths: `backend/app/models/booking.py`, `backend/app/models/contact.py`, `backend/app/models/__init__.py`, `backend/migrations/versions/0003_bookings.py`. Depends: T011. Accept: Enforce "starts_at < ends_at", "status in confirmed/canceled", "confirmed implies null canceled_at, canceled implies non-null canceled_at" and partial exclusion on same-activity confirmed [start,end); contacts never enter history; backup role reads exactly the six history fields, not private contacts; adjacency works. Covers: FR-009, FR-017, FR-025.
+- [X] T012 Owner: Backend — Map immutable booking history and isolated ephemeral contacts; add the named GiST exclusion. Paths: `backend/app/models/booking.py`, `backend/app/models/contact.py`, `backend/app/models/__init__.py`, `backend/migrations/versions/0003_bookings.py`. Depends: T011. Accept: Enforce "starts_at < ends_at", "status in confirmed/canceled", "confirmed implies null canceled_at, canceled implies non-null canceled_at" and partial exclusion on same-activity confirmed [start,end); contacts never enter history; backup role reads exactly the six history fields, not private contacts; adjacency works. Covers: FR-009, FR-017, FR-025.
   Verbatim data-model constraints for `bookings` — fields: id PK, activity_id FK, starts_at timestamptz, ends_at timestamptz, status, canceled_at nullable timestamptz; rules: "Only approved retained history: reference/activity/start/end/status/original cancellation time. No contact fields, free text, created-at history, attempt credential, or mutable duration snapshot. Start/end immutable after confirmation."
   Verbatim data-model constraints for `private.booking_contacts` — fields: booking_id PK/FK, attendee_name, attendee_email, delete_at timestamptz; rules: "Zero or one row per booking. Name/email both present or row absent. Deadline derived from immutable end or original cancellation; indexed for deletion. Excluded from all backups/exports."
 
-- [ ] T013 Owner: Backend — Map attempt/binding/generation/recovery state and immutable receipt/deadline constraints. Paths: `backend/app/models/attempt.py`, `backend/app/models/recovery.py`, `backend/app/models/__init__.py`, `backend/migrations/versions/0004_attempts.py`. Depends: T012. Accept: Unique generation/key digest serializes admission; T/E and binding commit together; stable CHECK enforces E=T+24 elapsed hours, no now()-dependent CHECK; expiry drops binding/result links but preserves non-authorizing tombstone; no attempt cascade deletes a booking. Covers: FR-024, FR-029.
+- [X] T013 Owner: Backend — Map attempt/binding/generation/recovery state and immutable receipt/deadline constraints. Paths: `backend/app/models/attempt.py`, `backend/app/models/recovery.py`, `backend/app/models/__init__.py`, `backend/migrations/versions/0004_attempts.py`. Depends: T012. Accept: Unique generation/key digest serializes admission; T/E and binding commit together; stable CHECK enforces E=T+24 elapsed hours, no now()-dependent CHECK; expiry drops binding/result links but preserves non-authorizing tombstone; no attempt cascade deletes a booking. Covers: FR-024, FR-029.
   Verbatim data-model constraints for `private.booking_attempts` — fields: generation + key_digest composite PK, first_received_at NOT NULL, expires_at NOT NULL, state, booking_id nullable FK, rejection_status/code and safe field codes nullable; rules: "Key digest is HMAC of full private key with server secret; raw key never stored. States admitted/succeeded/rejected/expired. DB timestamp T and E=T+24h commit with original binding under approved A-002; immutable thereafter. Delayed COMMIT consumes the fixed window and may make the key expired immediately. Result and booking link are removed at expiry; minimal expiry tombstone retained for accepted generation. No contact values."
   Verbatim data-model constraints for `private.attempt_bindings` — fields: generation + key_digest PK/FK, payload_fingerprint; rules: "HMAC of versioned canonical submission; treated as derived personal data, excluded from backups and removed on expiry or earlier applicable contact deadline. No raw request copy."
   Verbatim data-model constraints for `private.retry_generation` — fields: singleton id, generation, created_at; rules: "Random public restore epoch, retained across normal restarts/transient failures; approved A-003 permits change only after a separately approved unrecoverable, fenced restore. Missing state fails readiness. Never imported from backup."
   Verbatim data-model constraints for `private.recovery_events` — fields: event reference, restored_at, snapshot reference, old generation if known, new generation, state-loss reason; rules: "Privacy-safe operator recovery record, no guest keys/contacts; generation invalidation allowed only under approved A-003 and separately approved restore."
 
-- [ ] T014 Owner: Backend — Map the single-admin, absolute session expiry and privacy-safe worker status tables. Paths: `backend/app/models/admin.py`, `backend/app/models/worker.py`, `backend/app/models/__init__.py`, `backend/migrations/versions/0005_security_worker.py`. Depends: T013. Accept: Argon2/hash/verifier fields contain no raw credentials; deadline/lookup indexes exist; repeat upgrade is a no-op; all foundational DB tests pass. No time-dependent CHECK or extra retained booking-history fields. Covers: FR-013, FR-014, FR-028, FR-025.
+- [X] T014 Owner: Backend — Map the single-admin, absolute session expiry and privacy-safe worker status tables. Paths: `backend/app/models/admin.py`, `backend/app/models/worker.py`, `backend/app/models/__init__.py`, `backend/migrations/versions/0005_security_worker.py`. Depends: T013. Accept: Argon2/hash/verifier fields contain no raw credentials; deadline/lookup indexes exist; repeat upgrade is a no-op; all foundational DB tests pass. No time-dependent CHECK or extra retained booking-history fields. Covers: FR-013, FR-014, FR-028, FR-025.
   Verbatim data-model constraints for `private.worker_status` — fields: singleton id, last heartbeat, last successful purge, overdue count, safe failure code; rules: "Private operational state for readiness/status only; no contacts or credentials; excluded from backups."
   Verbatim data-model constraints for `private.admins` — fields: id PK, email UNIQUE, password_hash; rules: "One seeded admin; Argon2; configured development credentials only. Seed rerun preserves existing credentials. Reprovision after restore, not from booking-history backup."
   Verbatim data-model constraints for `private.admin_sessions` — fields: token_digest PK, admin_id FK, issued_at, expires_at; rules: "Opaque bearer verifier, absolute expiry = issued_at + 60 elapsed minutes. No extension/refresh; expired sessions removed by worker. Excluded from backups."
@@ -435,9 +439,8 @@ This approved task baseline adds the nine dependency edges for I1/I2; defines QA
 Backend private hooks, isolated component-candidate execution and redacted evidence in the
 [execution protocol](../../docs/EXECUTION_PROTOCOL.md); adds review checkpoints within T055/T073;
 and makes image/tzdata pins and Ruff/mypy commands explicit. No task IDs or coverage rows are
-removed. All 92 tasks were unchecked at refinement. Thirteen tasks are now integrated and complete
-after reviewed post-merge verification; 79 remain unchecked. T007/T009 and T010 authoring have
-separate Backend source evidence, not central integration completion. Applicable runtime
+removed. All 92 tasks were unchecked at refinement. The completion records above track subsequent
+reviewed integration and verification. Applicable runtime
 verification and scoped execution/merge authorization remain required.
 
 ## Dependencies and execution order
@@ -859,7 +862,8 @@ the second completion record. T015/T018 integration is documented in the
 tasks and records Backend source readiness/T011 authorization. The
 [PostgreSQL foundation record](../../docs/reviews/backend-database-foundation.md) completes
 T007/T009 after green integration, preserving T010 and its separate T011 continuation.
-Fifteen tasks are complete; 77 remain unchecked.
+The [schema publication record](../../docs/reviews/schema-foundation-publication.md) completes
+T010–T014. Twenty tasks are complete and 72 remain unchecked.
 No automatic progression to further tasks, recovery, main integration or deployment is authorized.
 
 ## Task inventory
